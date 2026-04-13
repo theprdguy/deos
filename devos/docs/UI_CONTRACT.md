@@ -1,6 +1,6 @@
 # UI Contract — SSOT
 
-> Update this file first when UI behavior changes.
+> Claude 2 or Codex must update this file BEFORE changing UI behavior.
 
 ## Global UI States (mandatory)
 Every screen must handle:

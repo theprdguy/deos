@@ -1,0 +1,75 @@
+# os2.yaml — Agentic Coding OS v3.1 Configuration
+# Server + Dispatcher configuration
+
+project_root: "."
+devos_dir: "devos"
+queue_file: "devos/tasks/QUEUE.yaml"
+plans_dir: "devos/plans"
+logs_dir: "devos/logs"
+
+# Agent Dispatch Configuration
+agents:
+  CLAUDE1:
+    mode: pipe               # claude -p (planning + research tasks)
+    command: ["claude", "-p"]
+    config_dir: ".claude"    # Account A
+    timeout: 300
+    notes: "Used by os2-server for planning and agent-review gates."
+
+  CLAUDE2:
+    mode: subprocess         # claude -p with Account B config
+    command: ["claude", "-p"]
+    config_dir: ".claude-b"  # Account B — different ANTHROPIC_API_KEY
+    env:
+      CLAUDE_CONFIG_DIR: ".claude-b"
+    timeout: 600
+    fallback: "CODEX"        # If .claude-b not configured, delegate to CODEX
+    notes: "App builder (backend + GUI design/impl). Separate Claude account."
+
+  CODEX:
+    mode: subprocess
+    command: ["codex", "exec", "-s", "workspace-write", "--add-dir", ".."]
+    timeout: 900
+    notes: "Platform builder (infra + data + tests + mechanical). Shares apps/web/ scope via ticket files."
+
+
+# Dispatch settings
+dispatch:
+  max_concurrent: 2          # Max agents running simultaneously
+  auto_chain: true           # Auto-dispatch next ticket when current finishes
+  scope_check: true          # Verify no file scope overlap before parallel dispatch
+  approval_required: true    # Always require approval before dispatch
+
+# Gate pipeline — verification after agent completion
+gates:
+  defaults:
+    - name: "tests"
+      run: "make test"
+    - name: "secrets"
+      run: "make scan-secrets"
+    - name: "review"
+      type: "agent-review"
+  by_tag:
+    auth:
+      - name: "security"
+        run: "make security-check"
+  agent_review:
+    max_diff_lines: 500
+    timeout: 120
+  auto_retry:
+    enabled: true
+    max_retries: 1          # Backward-compatible default when ticket.priority is missing
+    retry_policy:
+      critical: 3
+      high: 2
+      medium: 1
+      low: 1
+
+# Notification settings
+notifications:
+  sound: true                # macOS sound on completion
+
+# Server settings
+server:
+  log_file: ".os2-server.log"
+  log_level: "INFO"

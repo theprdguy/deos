@@ -1,125 +1,25 @@
-sprint_goal: "Bootstrap a reusable multi-LLM vibe-coding OS (SSOT + Make + A-Mode)"
+version: '3.0'
 
-defaults:
-  verify:
-    - "make pr-check"
-
-# ─── Ticket Template v2.0 (WHAT + CONTEXT) ───
-# Claude writes WHAT and CONTEXT. Builders decide HOW.
+# ─── Ticket Template v3.1 (WHAT + CONTEXT) ───
+# Claude 1 writes WHAT and CONTEXT. Builders decide HOW.
 #
 # - id: T-XXX
-#   status: todo|doing|blocked|done|parked
-#   owner: CLAUDE|CODEX|GEMINI
-#   goal: "What to build — behavioral requirement (1 sentence)"
+#   owner: CLAUDE2|CODEX
+#   status: todo
+#   priority: high|medium|low
+#   goal: "What to build — behavioral requirement"
 #   context: |
-#     Why it's needed + technical context from Claude's research
-#     (MCP/context7 findings, latest API changes, version info)
-#   constraints: |
-#     Technical constraints (versions, compatibility, dependencies)
+#     Why it's needed + technical research from Claude 1
+#     (MCP/context7 findings, API changes, version constraints)
+#   constraints:
+#     - "Technical constraint"
 #   dod:
-#     - "Acceptance criteria (behavior-based)"
+#     - "Acceptance criterion (input → expected output)"
 #   files:
-#     - "Files/directories to modify (ownership scope)"
-#   skills_hint: []  # Optional: [TDD, systematic-debugging, verification-before-completion]
-#   verify:
-#     - "make pr-check"
-#   contract_impact: none|api|ui|both
-#   deps: ["T-XXX"]
+#     - "path/to/file"
+#   verify: "make pr-check"
+#   deps: []
+#   gates: []  # leave empty to use os2.yaml defaults
 # ──────────────────────────────────────────────
 
-tickets:
-  - id: T-000
-    status: todo
-    owner: CLAUDE
-    goal: "Bootstrap repo skeleton + SSOT files + make interface"
-    context: |
-      Initial setup before any project work begins.
-      All SSOT files and the make interface must be functional before builders can be deployed.
-    spec: |
-      - Create all SSOT files under devos/ (AI.md, CONTEXT.md, PROJECT_STATE.md, etc.)
-      - Verify Makefile targets: start/triage/pr-check all work
-      - Place role files in .claude/.codex/.gemini
-    dod:
-      - "All SSOT files exist"
-      - "make start / make triage / make pr-check work"
-    files:
-      - "devos/**"
-      - "Makefile"
-      - ".claude/**"
-    verify:
-      - "make help"
-      - "make start"
-      - "make pr-check"
-    contract_impact: both
-    deps: []
-
-  - id: T-001
-    status: todo
-    owner: CLAUDE
-    goal: "Run session-start triage routine (A-Mode) and refine rules"
-    context: |
-      Validate the A-Mode triage process by actually running it.
-      At least 2 open questions are needed for testing.
-    spec: |
-      - Write 2+ open questions in questions/QUEUE.md
-      - Run Claude session-start prompt for triage
-      - Record results in CONTEXT.md
-    dod:
-      - "At least 2 open questions exist with Options/Default"
-      - "A-Mode routine documented in CONTEXT.md"
-    files:
-      - "devos/CONTEXT.md"
-      - "devos/questions/QUEUE.md"
-      - "devos/PROJECT_STATE.md"
-    verify:
-      - "make triage"
-      - "make status"
-    contract_impact: none
-    deps: ["T-000"]
-
-  - id: T-010
-    status: parked
-    owner: GEMINI
-    goal: "(When project chosen) Create UI skeleton with global states + mock-first"
-    context: |
-      Once a project is decided, create the UI skeleton.
-      Implement all states defined in UI_CONTRACT (loading/empty/error/success).
-      Use mock data for development even without a real API.
-    spec: |
-      - Create components per UI_CONTRACT.md screen-level state definitions
-      - Build mock data from API_CONTRACT.md example JSON
-      - Set up global layout + routing structure
-    dod:
-      - "loading/empty/error/success implemented"
-      - "mock data matches API contract examples"
-    files:
-      - "apps/web/**"
-      - "devos/docs/UI_CONTRACT.md"
-    verify:
-      - "make pr-check"
-    contract_impact: ui
-    deps: ["T-000"]
-
-  - id: T-020
-    status: parked
-    owner: CODEX
-    goal: "(When project chosen) Create API skeleton matching API contract + tests"
-    context: |
-      Once a project is decided, create the API skeleton.
-      Implement all endpoints defined in API_CONTRACT.
-      Error format must also match the contract.
-    spec: |
-      - Create routes per API_CONTRACT.md endpoint list
-      - Match request/response format to contract example JSON
-      - Unify error format (per contract)
-      - Write basic tests for each endpoint
-    dod:
-      - "endpoints exist per API contract"
-      - "error format matches contract"
-    files:
-      - "apps/api/**"
-      - "devos/docs/API_CONTRACT.md"
-    verify:
-      - "make pr-check"
-    contract_impact: api
-    deps: ["T-000"]
+tickets: []

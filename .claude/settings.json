@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/guard-no-impl.sh"
+            "command": "bash .claude/hooks/guard-no-impl.sh"
           }
         ]
       },
@@ -15,10 +15,20 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/guard-no-impl.sh"
+            "command": "bash .claude/hooks/guard-no-impl.sh"
           }
         ]
       }
     ]
+  },
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."]
+    }
   }
 }

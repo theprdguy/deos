@@ -1,2 +1,16 @@
 .DS_Store
 worktrees/
+__pycache__/
+*.pyc
+.env
+.env.local
+.venv/
+venv/
+node_modules/
+devos/plans/pending/*.yaml
+devos/plans/approved/*.yaml
+devos/plans/rejected/*.yaml
+.claude-b/.credentials.json
+.claude-b/todos/
+.os2-server.log
+.os2-server.pid

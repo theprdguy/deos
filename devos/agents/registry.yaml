@@ -1,57 +1,71 @@
-# Agent Registry (v2.0)
-# Central registry of all agents in the multi-LLM OS.
-# Read by Claude (Dispatcher) at boot to understand the team.
+# Agent Registry (v3.1 — os2)
+# Central registry of all 3 agents in the multi-LLM OS.
+# Read by Claude 1 (Planner) at boot to understand the team.
 
-version: "2.0"
+version: "3.1"
 
 agents:
-  - id: claude-dispatcher
-    role: dispatcher
+  - id: claude1-planner
+    role: planner-researcher
+    description: "Planner, Researcher, SSOT Manager. Plans, creates tickets, triages questions, reviews PRs. Never codes."
     instruction_file: .claude/CLAUDE.md
-    capabilities: [planning, triage, review, ticket-creation, research]
+    capabilities: [planning, research, triage, ticket-creation, review, ssot-management]
     can_modify:
       - "devos/**"
-      - "Makefile"
       - ".claude/**"
+      - ".claude-b/**"
       - "AGENTS.md"
-      - "GEMINI.md"
+      - "os2.yaml"
+      - "Makefile"
+    cannot_modify:
+      - "apps/**"
+      - "packages/**"
+      - "scripts/**"
+    mode: "interactive | pipe"  # local CLI or remote via os2-server
+    account: A
     status: active
-    notes: "Manager + Researcher. Uses MCP/context7 for tech research."
+    notes: "Uses MCP/context7 for research."
 
-  - id: codex-builder
-    role: builder
-    instruction_file: AGENTS.md
-    capabilities: [backend, infra, testing, refactoring]
+  - id: claude2-app
+    role: app-builder
+    description: "App builder. Implements backend logic + GUI design/implementation. Strength: design judgment, component architecture, UX flow."
+    instruction_file: .claude-b/CLAUDE.md
+    capabilities: [backend, api, service-logic, database, gui-design, ui-components, ux-flow]
     can_modify:
+      - "apps/api/src/**"
+      - "apps/web/**"  # shared scope with codex, separated by ticket files
+      - "packages/shared/**"
+      - "devos/logs/*-claude2-*"
+      - "devos/questions/QUEUE.md"
+    cannot_modify:
+      - "devos/tasks/QUEUE.yaml"
+      - "devos/PROJECT_STATE.md"
+    mode: "pipe"  # claude -p with account B config
+    account: B
+    config_dir: ".claude-b"
+    status: active
+    notes: "Uses separate Claude Code config dir (.claude-b) for Account B credentials. Prefer for design-heavy GUI tasks."
+
+  - id: codex-platform
+    role: platform-builder
+    description: "Platform builder. Handles infra, data pipelines, CI/CD, scripts, testing, and mechanical bulk changes. Shares apps/web/ scope via ticket files."
+    instruction_file: AGENTS.md
+    capabilities: [ui-mechanical, infra, data, ci-cd, scripts, testing, refactoring, utilities, bulk-edits]
+    can_modify:
+      - "apps/web/**"  # shared scope with claude2, separated by ticket files
       - "apps/api/**"
       - "packages/**"
+      - "scripts/**"
+      - "infra/**"
       - "tests/**"
+      - "styles/**"
       - "devos/docs/API_CONTRACT.md"
       - "devos/logs/*-codex-*"
       - "devos/questions/QUEUE.md"
+    cannot_modify:
+      - "devos/tasks/QUEUE.yaml"
+      - "devos/PROJECT_STATE.md"
+    mode: "subprocess"
+    token_budget: high  # Most tokens available — assign complex/large tickets here
     status: active
-    notes: "Backend/Infra builder. Reads AGENTS.md natively."
-
-  - id: gemini-builder
-    role: builder
-    instruction_file: GEMINI.md
-    capabilities: [frontend, ui, qa, design]
-    can_modify:
-      - "apps/web/**"
-      - "styles/**"
-      - "devos/docs/UI_CONTRACT.md"
-      - "devos/logs/*-gemini-*"
-      - "devos/questions/QUEUE.md"
-    status: active
-    notes: "Frontend/UI + QA builder. Reads GEMINI.md natively."
-
-  - id: claude-secondary
-    role: TBD
-    instruction_file: .claude/CLAUDE-SECONDARY.md
-    capabilities: []
-    can_modify: []
-    status: inactive
-    notes: |
-      Second Claude instance. Role undecided.
-      Options: Reviewer / QA-TDD Agent / Second Dispatcher
-      Activate when role is determined.
+    notes: "High token budget — prefer for large, mechanical, or bulk-edit tasks. Reads AGENTS.md natively."

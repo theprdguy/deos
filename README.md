@@ -1,41 +1,41 @@
-# Vibe Coding OS v2.0 (Claude x Codex x Gemini) — **devos** Edition
+# Vibe Coding OS v3.1 (Claude x Claude x Codex)
 
-A repo-first operating system for **multi-LLM parallel coding** that keeps you in flow.
+A repo-first operating system for **multi-agent parallel coding** that keeps you in flow.
 
-- **Claude** → *Manager + Researcher* (plan → research → tickets → review — NO implementation code)
-- **Codex** → *Backend/Infra Builder* (auto-reads `AGENTS.md`)
-- **Gemini** → *Frontend/UI + QA Builder* (auto-reads `GEMINI.md`)
+- **Claude 1** → *Planner + Researcher* (plan → research → tickets → review — NO implementation code)
+- **Claude 2** → *App Builder* (backend logic + GUI design/impl, Account B)
+- **Codex** → *Platform Builder* (infra, data, tests, scripts, mechanical changes)
 
-> **Why multi-LLM?** Each LLM has limited tokens. Claude manages, Codex/Gemini build. Total capacity = sum of all agents.
 > **Principle:** Chat is not the source of truth. **The repo is.**
 
 ---
 
 ## Why this exists
 
-Multi-LLM coding usually fails for boring reasons:
+Multi-agent coding usually fails for boring reasons:
 - Claude runs out of tokens doing everything alone
-- context drifts across chats
-- multiple models edit overlapping files
-- questions interrupt work and kill momentum
+- Context drifts across chats
+- Multiple agents edit overlapping files
+- Questions interrupt work and kill momentum
 
 Vibe Coding OS solves this:
-**manager/builder separation + repo-based truth + queued decisions + ownership + contracts-first**.
+**planner/builder separation + repo-based truth + queued decisions + ownership + approval workflow**.
 
 ---
 
-## What's new in v2.0
+## What's new in v3.1
 
-| Change | v1.5 | v2.0 |
+| Change | v2.0 | v3.1 |
 |--------|------|------|
-| Prompt delivery | `make copy-*` (clipboard) | Native instruction files (AGENTS.md, GEMINI.md) |
-| Builder startup | Copy-paste prompt manually | CLI auto-reads instruction file on start |
-| Cross-agent visibility | None | `devos/logs/` structured session logs |
-| Agent management | Fixed 3 agents | `devos/agents/registry.yaml` (N-agent support) |
-| Ticket design | Code-level spec | WHAT+CONTEXT (behavioral req + research context) |
-| Claude role | Manager | Manager + Researcher (MCP/context7/LSP) |
-| Handoff format | 3 lines | 4 lines (+Log) |
-| Worktree support | None | `make worktree-create TICKET=T-xxx` |
+| Agents | Claude + Codex + Gemini | Claude 1 + Claude 2 + Codex |
+| Frontend builder | Gemini CLI | Claude 2 (Account B, design judgment) |
+| Dispatch | Manual (`codex` / `gemini`) | Automated (`make dispatch-all`) |
+| Approval | None | PRD → plan → `make approve` → auto-dispatch |
+| Gate pipeline | None | tests → secrets → agent-review → verify |
+| Gate failure | Ticket blocked | Auto-retry with file rollback |
+| Auto-chain | None | Downstream tickets auto-dispatch on completion |
+| Config | Makefile only | `os2.yaml` (agents, gates, retry policy) |
+| Claude 2 auth | N/A | Account B via `CLAUDE_CONFIG_DIR=.claude-b` |
 
 ---
 
@@ -43,53 +43,68 @@ Vibe Coding OS solves this:
 
 ```
 repo/
-  AGENTS.md                # Codex CLI native instruction file (auto-loaded)
-  GEMINI.md                # Gemini CLI native instruction file (auto-loaded)
+  AGENTS.md                  # Codex CLI native instruction file (auto-loaded)
+  os2.yaml                   # Master config (agents, gates, dispatch settings)
   .claude/
-    CLAUDE.md              # Auto-loaded by Claude Code (manager rules)
-    CLAUDE-SECONDARY.md    # Second Claude instance template (inactive)
-    hooks/guard-no-impl.sh # Blocks Claude from writing impl code
-    settings.json          # Hook configuration
-  Makefile                 # Wrapper (delegates to devos/Makefile)
-  START_HERE.md
+    CLAUDE.md                # Claude 1 operating rules (auto-loaded)
+    hooks/guard-no-impl.sh   # Blocks Claude 1 from writing impl code
+    settings.json            # Hook + MCP server config
+  .claude-b/
+    CLAUDE.md                # Claude 2 operating rules (Account B)
+  Makefile                   # Primary CLI interface
+  requirements.txt           # pyyaml>=6.0
+  scripts/setup.sh           # First-time setup script
+  com.os2.server.plist       # macOS launchd config (sub-machine auto-start)
 
-  devos/
-    AI.md                  # Operating rules (shared constitution)
-    CONTEXT.md             # TL;DR (100 lines)
-    PROJECT_STATE.md       # Current state
-    TASKS.md               # Human task board view
-    agents/
-      registry.yaml        # Agent registry (N-agent support)
-    logs/                  # Session logs (cross-agent visibility)
-      README.md
-    docs/                  # Contracts, ADR, architecture
-    tasks/QUEUE.yaml       # Ticket queue (SSOT)
-    questions/QUEUE.md     # Question queue (A-Mode)
-    .claude/ .codex/ .gemini/  # Role-specific quick references
+  server/                    # os2-server (Python dispatcher)
+    dispatcher.py            # Multi-agent dispatch + gate pipeline
+    ssot.py                  # SSOT file readers/writers
+    approval.py              # Plan approval state machine
+    planner.py               # claude -p pipe mode wrapper
+    config.py                # os2.yaml loader
+
+  devos/                     # SSOT Brain
+    AI.md                    # Shared agent constitution
+    CONTEXT.md               # TL;DR (update each session)
+    PROJECT_STATE.md         # Current state
+    TASKS.md                 # Human task board view
+    agents/registry.yaml     # 3-agent registry with scopes
+    tasks/QUEUE.yaml         # Ticket queue (machine-readable)
+    plans/                   # Approval workflow (pending/approved/rejected)
+    logs/                    # Session logs (cross-agent visibility)
+    questions/QUEUE.md       # Async question queue (A-Mode)
+    docs/                    # Contracts, ADR, architecture, guides
 ```
 
 ---
 
 ## Quickstart
 
-### 1) Use GitHub template
+### 1. Use GitHub template
 Go to this repo on GitHub → **Use this template** → Create your project repo.
 
-### 2) Clone
+### 2. Clone and install
 ```bash
 git clone <your-repo-url>
 cd <your-repo-folder>
+make setup          # first-time setup (CLI checks + venv + Claude 2 auth)
 ```
 
-### 3) Bootstrap
+### 3. Start the server
 ```bash
 make start
 ```
 
-### 4) First commit
+### 4. Open Claude 1 (Account A)
+```bash
+# Claude Code CLI — auto-reads .claude/CLAUDE.md
+claude
+```
+
+### 5. First commit
 ```bash
 git add .
-git commit -m "chore: bootstrap vibe coding OS v2.0 (devos)"
+git commit -m "chore: bootstrap vibe coding OS v3.1"
 git push -u origin main
 ```
 
@@ -98,34 +113,39 @@ git push -u origin main
 ## Daily workflow
 
 ```bash
-make start
+make pickup         # (multi-machine) git pull + start
 ```
 
 Then:
 
-1) **Claude triage** — open Claude Code in this repo
-Claude auto-reads `.claude/CLAUDE.md` and runs boot sequence.
-It reads SSOT files + latest builder session logs → triages questions → reports status + next tickets.
+1. **Claude 1 planning** — open Claude Code in this repo
+Claude auto-reads `.claude/CLAUDE.md` and reads SSOT files.
+Submit a PRD → Claude 1 decomposes it into tickets → saves a plan.
 
-2) **Builders in parallel** — open CLI in same repo
+2. **Approve the plan**
 ```bash
-# Codex CLI (auto-reads AGENTS.md on start)
-codex
-
-# Gemini CLI (auto-reads GEMINI.md on start)
-gemini
+make pending        # review the plan
+make approve        # approve → tickets added → auto-dispatch begins
+# or:
+make reject R="reason"  # reject → Claude 1 revises
 ```
-No clipboard needed. Each builder reads its instruction file automatically.
 
-3) **After builder sessions** — check logs
-```bash
-make log-review
+3. **Builders work in parallel** (auto-dispatched by os2-server)
 ```
-Review what each builder accomplished.
+Claude 2 (Account B) → app tickets (backend + GUI)
+Codex                → platform tickets (infra, tests, scripts)
+```
 
-4) **Before PR**
+4. **Check status**
 ```bash
-make pr-check
+make status         # project status
+make queue          # ticket queue
+make logs           # recent session logs
+```
+
+5. **Before handoff**
+```bash
+make handoff        # stop + git push (switch to another machine)
 ```
 
 ---
@@ -138,34 +158,35 @@ make pr-check
 sequenceDiagram
   autonumber
   participant U as You
-  participant C as Claude (Manager+Researcher)
-  participant X as Codex (Builder)
-  participant G as Gemini (Builder)
+  participant C1 as Claude 1 (Planner)
+  participant S as os2-server
+  participant C2 as Claude 2 (App)
+  participant X as Codex (Platform)
   participant R as Repo (SSOT)
 
-  U->>R: make start
-  C->>R: auto-reads CLAUDE.md + SSOT + builder logs
-  C->>R: research tech context (MCP/context7)
-  C->>R: create tickets (WHAT+CONTEXT) + update SSOT
+  U->>C1: Submit PRD
+  C1->>R: Research (MCP/context7)
+  C1->>R: Decompose → devos/plans/pending/
+  U->>S: make approve
+  S->>R: Move plan to approved/ + add tickets
 
-  par Build in parallel
-    X->>R: auto-reads AGENTS.md → implements tickets
-    X->>R: write session log to devos/logs/
+  par Auto-dispatch
+    S->>C2: claude -p (Account B) — app tickets
+    C2->>R: Implement + write session log
   and
-    G->>R: auto-reads GEMINI.md → implements UI tickets
-    G->>R: write session log to devos/logs/
+    S->>X: codex exec — platform tickets
+    X->>R: Implement + write session log
   end
 
-  U->>R: make log-review
-  C->>R: reads builder logs at next session start
-  U->>R: make pr-check
-  C->>R: review + merge guidance
+  S->>C1: agent-review gate (PASS/FAIL)
+  S->>R: Update ticket status (done|blocked)
+  U->>C1: PR review
 ```
 
-### Token budget (why Claude doesn't code)
+### Token budget (why Claude 1 doesn't code)
 
 ```mermaid
-pie title Claude Token Budget v2.0
+pie title Claude 1 Token Budget v3.1
   "Research (context7/MCP/LSP)" : 25
   "Ticket Writing (WHAT+CONTEXT)" : 25
   "Analysis & Planning" : 25
@@ -178,38 +199,63 @@ pie title Claude Token Budget v2.0
 
 ## WHAT+CONTEXT ticket design
 
-Claude writes **WHAT** (behavioral requirements) and **CONTEXT** (research findings).
+Claude 1 writes **WHAT** (behavioral requirements) and **CONTEXT** (research findings).
 Builders decide **HOW** (implementation approach, code structure, patterns).
 
 ```yaml
 - id: T-123
+  owner: CLAUDE2
   status: todo
-  owner: CODEX
+  priority: high
   goal: "What to build — behavioral requirement"
   context: |
-    Why it's needed + Claude's research findings
+    Why it's needed + Claude 1's research findings
     (MCP/context7: latest API changes, version constraints)
-  constraints: |
-    Technical constraints (versions, compatibility, deps)
+  constraints:
+    - "Technical constraint (versions, compatibility)"
   dod:
-    - "Acceptance criteria (behavior-based)"
+    - "POST /endpoint with valid input returns 200 + expected response"
+    - "POST /endpoint with invalid input returns 400 + error message"
   files:
-    - "Files/directories to modify"
-  skills_hint: []
-  verify:
-    - "make pr-check"
+    - "apps/api/src/feature.ts"
+  verify: "make pr-check"
+  deps: []
 ```
+
+---
+
+## Gate pipeline
+
+After each agent completes, the dispatcher runs:
+
+```
+1. make test          — test suite
+2. make scan-secrets  — secret scanning
+3. agent-review       — Claude 1 reviews diff against DOD (PASS/FAIL verdict)
+4. ticket verify      — ticket-specific verify command
+```
+
+On gate failure: files are rolled back and the agent retries automatically.
+Retry count is priority-based (critical: 3, high: 2, medium/low: 1).
+
+---
+
+## Auto-chain dispatch
+
+When a ticket completes:
+- The dispatcher re-scans the queue for newly unblocked tickets
+- Downstream tickets (deps satisfied) are dispatched automatically
+- No manual `make dispatch-all` needed between tickets
 
 ---
 
 ## Session logs
 
 Builders write structured logs to `devos/logs/` at session end.
-Claude reads them at next boot to understand cross-agent context.
+Claude 1 reads them at next boot for cross-agent context.
 
 ```bash
 make logs          # list recent logs
-make log-review    # show latest log per agent
 ```
 
 ---
@@ -217,26 +263,9 @@ make log-review    # show latest log per agent
 ## Agent registry
 
 All agents registered in `devos/agents/registry.yaml`:
-- `claude-dispatcher` — Manager + Researcher
-- `codex-builder` — Backend/Infra Builder
-- `gemini-builder` — Frontend/UI Builder
-- `claude-secondary` — (inactive, pre-registered for future use)
-
-```bash
-make agents        # list registered agents and status
-```
-
----
-
-## Worktree support
-
-Run parallel tickets in isolated environments:
-
-```bash
-make worktree-create TICKET=T-123   # create worktrees/T-123/ on feat/T-123 branch
-make worktree-list                   # list active worktrees
-make worktree-clean                  # remove merged worktrees
-```
+- `claude1-planner` — Planner + Researcher (Account A)
+- `claude2-app` — App Builder (Account B, backend + GUI design)
+- `codex-platform` — Platform Builder (infra, tests, scripts, mechanical)
 
 ---
 
@@ -244,12 +273,8 @@ make worktree-clean                  # remove merged worktrees
 
 **Rule:** don't stop building to ask. Queue it.
 
-```bash
-make new-question
-```
-
-Add to `devos/questions/QUEUE.md` with Options + Default.
-Resolve at session start via Claude triage.
+Add to `devos/questions/QUEUE.md` with Options + Recommendation + Default.
+Resolve at session start via Claude 1 triage.
 
 ---
 
@@ -258,44 +283,53 @@ Resolve at session start via Claude triage.
 - **1 ticket = 1 PR**
 - Each ticket has strict `files:` scope
 - Builders edit **only** files in their scope
-- **Contracts-first**: update docs before code
-
-```bash
-make new-ticket
-```
+- **Contract-first**: update docs before code
+- Scope conflicts detected before dispatch (no parallel edits to the same file)
 
 ---
 
-## Learn the system
+## Multi-machine setup (optional)
 
-- System Guide: `devos/docs/SYSTEM_GUIDE.md`
-- Playbook: `devos/docs/PLAYBOOK.md`
-- Manual 101: `devos/docs/MANUAL_101.md`
+Run os2-server as a daemon on a sub-machine for always-on control:
+
+```bash
+# Edit com.os2.server.plist — update WorkingDirectory to your project path
+make install-daemon   # register launchd (sub-machine)
+make uninstall-daemon # unregister
+```
+
+```bash
+make handoff          # main machine → stop + push
+make pickup           # sub machine → pull + start
+```
 
 ---
 
 ## FAQ
 
-### Do I need all three models?
-No. But the system shines with **role separation** — Claude manages, others build.
+### Do I need two Claude accounts?
+No. If `.claude-b` credentials are not configured, CLAUDE2 tickets automatically fall back to CODEX.
 
-### Do I still need copy-paste?
-No. In v2.0, Codex CLI auto-reads `AGENTS.md` and Gemini CLI auto-reads `GEMINI.md` on startup.
-`make copy-*` is retained as a deprecated fallback.
+### Do I need all three agents?
+No. The OS works with just Codex. Claude 2 (Account B) is additive — it adds design judgment for GUI-heavy tasks.
 
-### Why can't Claude write code?
-Each LLM has limited tokens. If Claude spends tokens writing code, it can't manage.
+### Why can't Claude 1 write code?
+Each agent has limited tokens. If Claude 1 spends tokens writing code, it can't plan.
 Delegation = more total output.
 
-### What is Claude's Researcher role?
-Claude has MCP/context7/LSP tools that builders lack. Claude uses them to research
+### What is Claude 1's Researcher role?
+Claude 1 has MCP/context7/LSP tools that builders lack. Claude 1 uses them to research
 latest library APIs and version constraints, then includes findings in ticket `context:`.
-This bridges the tool asymmetry between Claude and the builders.
+This bridges the tool asymmetry between Claude 1 and the builders.
 
 ### What is the session log for?
-Builders write a structured log (≤50 lines) at session end. Claude reads these logs
+Builders write a structured log (≤50 lines) at session end. Claude 1 reads these logs
 at boot to understand what was built, what decisions were made, and what's pending.
-No more context blindness between LLMs.
+No more context blindness between agents.
+
+### What does `make approve` do?
+Moves the plan from `devos/plans/pending/` to `approved/`, writes tickets to `QUEUE.yaml`,
+and auto-dispatches all `todo` tickets to their assigned agents.
 
 ---
 

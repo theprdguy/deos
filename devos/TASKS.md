@@ -1,10 +1,12 @@
 # TASKS (Human View)
 
-## Top priorities (max 10)
-- [ ] T-000 Bootstrap SSOT + Make + queues
-- [ ] T-001 Session-start triage routine
+> This is a human-readable view. Source of truth: `tasks/QUEUE.yaml`
+> Run `make queue` to see the current queue state.
 
 ## Doing
+- (none)
+
+## Todo
 - (none)
 
 ## Blocked
@@ -13,6 +15,7 @@
 ## Done (recent)
 - (none)
 
-## Notes / Links
+## Notes
 - SSOT: tasks/QUEUE.yaml
 - Questions: questions/QUEUE.md
+- Pending plans: devos/plans/pending/

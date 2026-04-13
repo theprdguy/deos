@@ -4,13 +4,15 @@
 - (TBD) One sentence describing what we're building and why.
 
 ## Current Milestone
-- Foundation / Operating System v2.0
+- Bootstrap / Operating System v3.1
 - DoD:
   - SSOT files exist and are kept updated
-  - make-based interface works (make start / make triage / make pr-check)
-  - Native instruction files work (AGENTS.md, GEMINI.md auto-loaded)
+  - `make install && make start` works
+  - Approval workflow operational (`make approve`, `make reject`)
+  - Dispatch working (`make dispatch T=T-XXX`, `make dispatch-all`)
+  - Gate pipeline wired (make test, make scan-secrets)
+  - 3-agent registry configured (devos/agents/registry.yaml)
   - Session log system operational (devos/logs/)
-  - Agent registry configured (devos/agents/registry.yaml)
 
 ## What works now (demo path)
 - (TBD)
@@ -18,24 +20,22 @@
 ## Agent Status
 | Agent | Role | Status | Instruction File |
 |-------|------|--------|------------------|
-| claude-dispatcher | Dispatcher + Researcher | active | .claude/CLAUDE.md |
-| codex-builder | Backend Builder | active | AGENTS.md |
-| gemini-builder | Frontend Builder | active | GEMINI.md |
-| claude-secondary | TBD | inactive | .claude/CLAUDE-SECONDARY.md |
+| claude1-planner | Planner + Researcher | active | .claude/CLAUDE.md |
+| claude2-app | App Builder (Account B) | active | .claude-b/CLAUDE.md |
+| codex-platform | Platform Builder | active | AGENTS.md |
 
 ## In progress
-- [x] T-000 Bootstrap SSOT + Make + queues
-- [x] T-001 Define session-start triage routine
-- [x] v2.0 upgrade: native instruction files, logs, registry, skills integration
+- (TBD)
 
 ## Blockers / Questions
 - See questions/QUEUE.md
 
 ## Decisions (latest)
 - ADRs live under docs/ADR/
-- v2.0: WHAT+CONTEXT ticket design (Claude researches, builders implement)
-- v2.0: Native instruction files replace clipboard prompt delivery
-- v2.0: Session logs enable cross-agent visibility
+- v3.1: Automated gate pipeline (tests → secrets → agent-review → verify)
+- v3.1: Auto-chain dispatch — completed tickets unlock downstream automatically
+- v3.1: Priority-based retry with rollback on gate failure
+- v3.1: Claude 2 (Account B) replaces Gemini for app/GUI work
 
 ## Next dispatch hint
-- When a concrete project appears: define demo path → generate first real tickets
+- When a concrete project appears: fill in PROJECT_STATE, CONTEXT, submit first PRD
