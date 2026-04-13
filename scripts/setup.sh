@@ -92,7 +92,7 @@ load_env_file
 success "Add any project-specific env vars to .env (it is gitignored)"
 
 section "4/4 Check Claude 2 credentials (Account B)"
-if [ -f "$ROOT_DIR/.claude-b/.credentials.json" ]; then
+if [ -f "$ROOT_DIR/.claude-b/.claude.json" ]; then
   success "Claude 2 credentials found"
 else
   warn "Claude 2 credentials not found. To set up Account B:"

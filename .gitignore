@@ -10,7 +10,7 @@ node_modules/
 devos/plans/pending/*.yaml
 devos/plans/approved/*.yaml
 devos/plans/rejected/*.yaml
-.claude-b/.credentials.json
+.claude-b/.claude.json
 .claude-b/todos/
 .os2-server.log
 .os2-server.pid

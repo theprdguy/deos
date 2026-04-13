@@ -22,4 +22,25 @@ version: '3.0'
 #   gates: []  # leave empty to use os2.yaml defaults
 # ──────────────────────────────────────────────
 
-tickets: []
+tickets:
+- id: T-001
+  owner: CODEX
+  status: todo
+  priority: high
+  goal: setup.sh에서 잘못된 credentials 파일명 `.credentials.json`을 실제 파일명 `.claude.json`으로 수정한다.
+  context: |
+    CLAUDE_CONFIG_DIR=.claude-b claude login 실행 시 Claude Code CLI가 생성하는 파일은
+    `.claude-b/.claude.json`이다. 그러나 setup.sh는 `.credentials.json`을 기대하여 Claude 2
+    인증 확인이 항상 실패한다.
+    dispatcher.py와 .gitignore는 이미 수정 완료됨.
+    남은 수정 대상: scripts/setup.sh:95 파일 존재 체크 경로
+  constraints:
+  - 로직 변경 없이 파일명 문자열만 교체할 것
+  dod:
+  - scripts/setup.sh:95에서 ".credentials.json" → ".claude.json" 으로 변경됨
+  - grep -r "\.credentials\.json" scripts/ 결과가 0건
+  files:
+  - scripts/setup.sh
+  verify: grep -rn "\.credentials\.json" scripts/ && exit 1 || echo "PASS"
+  deps: []
+  plan_id: null

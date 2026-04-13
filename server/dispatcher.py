@@ -140,7 +140,7 @@ class Dispatcher:
         config_dir = agent_cfg.get("config_dir")
         if config_dir:
             # Agent requires a config directory (e.g. .claude-b) — check credentials exist
-            creds = Path(config_dir) / ".credentials.json"
+            creds = Path(config_dir) / ".claude.json"
             if not creds.exists():
                 logger.info(f"{agent_name} not available: {creds} not found")
                 return False
