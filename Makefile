@@ -47,7 +47,7 @@ tail:
 ## Hand off to another machine (stop + git push)
 handoff:
 	@make stop
-	@git add devos/ && git diff --cached --quiet || git commit -m "handoff: $(shell date '+%Y-%m-%d %H:%M')"
+	@git add -A && git diff --cached --quiet || git commit -m "handoff: $(shell date '+%Y-%m-%d %H:%M')"
 	@git push
 	@echo "Handoff complete. Run 'make pickup' on the other machine."
 
