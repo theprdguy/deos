@@ -54,6 +54,7 @@ handoff:
 ## 다른 컴에서 이어받기 (git pull → start)
 pickup:
 	@git pull
+	@bash scripts/preflight-claude2.sh
 	@make start
 	@echo "이어받기 완료"
 
@@ -111,10 +112,12 @@ reject:
 ## Dispatch a ticket: make dispatch T=T-001
 dispatch:
 	@if [ -z "$(T)" ]; then echo "Usage: make dispatch T=T-001"; exit 1; fi
+	@bash scripts/preflight-claude2.sh
 	@.venv/bin/python3 -m server dispatch $(T)
 
 ## Dispatch all todo tickets
 dispatch-all:
+	@bash scripts/preflight-claude2.sh
 	@.venv/bin/python3 -m server dispatch-all
 
 # ── Gates / Verification ─────────────────────────────────────────────────────

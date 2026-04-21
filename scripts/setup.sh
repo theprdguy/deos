@@ -114,10 +114,10 @@ success "TG 토큰은 os2-hub에서 설정합니다"
 success "Run: /Users/hoanshin/Desktop/thePRD/os2-hub/scripts/setup.sh"
 
 section "4/4 Claude 2 인증 확인"
-if [ -f "$ROOT_DIR/.claude-b/.claude.json" ]; then
-  success "Claude 2 credentials found"
+if bash "$ROOT_DIR/scripts/preflight-claude2.sh" --advisory; then
+  :
 else
-  warn "Claude 2 credentials missing (.claude.json). Run: CLAUDE_CONFIG_DIR=.claude-b claude login"
+  WARN_COUNT=$((WARN_COUNT + 1))
 fi
 
 printf "\n"

@@ -26,14 +26,16 @@ make install-daemon
 
 **Start a session:**
 ```bash
-make pickup         # git pull + start server (multi-machine)
+make pickup         # git pull + CLAUDE2 preflight check + start server
 # or:
 make start          # just start server
 ```
+> `make pickup` blocks if `.claude-b/.claude.json` (Account B auth) is missing.
+> To fix: `CLAUDE_CONFIG_DIR=.claude-b claude login`
 
 **Open Claude 1:**
 ```bash
-claude              # auto-reads .claude/CLAUDE.md
+claude              # auto-reads .claude/CLAUDE.md (shows CLAUDE2 status banner on start)
 ```
 
 **Submit a PRD to Claude 1 → review the plan → approve:**
