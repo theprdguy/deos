@@ -50,3 +50,20 @@ Your role in tests depends on the ticket's `tdd` field and `impl_owner`/`test_ow
 After implementation, confirm coverage meets the gate (Line 70% / Branch 60%).
 If branch coverage is short, add tests for the uncovered branches yourself
 before marking the ticket done.
+
+## SKILLS INTEGRATION
+
+When a ticket includes `skills_hint: [skill-name]`, invoke that Anthropic **superpowers** skill. Relevant ones for CLAUDE2:
+
+| Situation | Skill |
+|---|---|
+| Bug fix ticket | `systematic-debugging` |
+| Multi-file parallel work | `dispatching-parallel-agents` |
+| Completion check before marking done | `verification-before-completion` |
+
+Install: see `devos/docs/SKILLS_PLUGIN_INSTALL.md` (per-laptop, one-time).
+
+Usage:
+- At session start, follow `devos/prompts/claude2/session-start.md`
+- On Edit tool failures, consult `devos/prompts/common/edit-failure-recovery.md`
+- For handoff format, use `devos/prompts/common/handoff-3lines.md`

@@ -78,3 +78,21 @@ Next: {next or "waiting"}
 Block: {Q-xxx or "none"}
 Log: devos/logs/{file}.md written
 ```
+
+## SKILLS INTEGRATION
+
+When a ticket includes `skills_hint: [skill-name]`, invoke that Anthropic **superpowers** skill. Relevant ones for CODEX:
+
+| Situation | Skill |
+|---|---|
+| Bug fix ticket | `systematic-debugging` |
+| Parallel multi-file work | `dispatching-parallel-agents` |
+| Completion check before marking done | `verification-before-completion` |
+| Large infra / migration plan | `writing-plans` |
+
+Install: see `devos/docs/SKILLS_PLUGIN_INSTALL.md` (per-laptop, one-time).
+
+Usage:
+- At session start, follow `devos/prompts/codex/session-start.md`
+- For handoff format, use `devos/prompts/common/handoff-3lines.md`
+- On Edit tool failures, consult `devos/prompts/common/edit-failure-recovery.md`

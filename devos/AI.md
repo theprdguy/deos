@@ -145,3 +145,50 @@ Testing infrastructure is layered:
 - **Stack-dependent**: test runners (pytest, Vitest, Playwright), coverage tools —
   included as part of the **first ticket for each app**, not pre-installed.
   Claude 1 researches current stack via context7/MCP when that first ticket arrives.
+
+## Session-Start Read Map
+| File | CLAUDE1 | CLAUDE2 | CODEX |
+|---|---|---|---|
+| `devos/AI.md` | ✅ (via @import) | ✅ (via @import) | ✅ |
+| `.claude/CLAUDE.md` | ✅ | — | — |
+| `.claude-b/CLAUDE.md` | — | ✅ | — |
+| `AGENTS.md` | — | — | ✅ |
+| `devos/docs/BUILDER_GUIDE.md` | — | ✅ | ✅ |
+| `devos/PROJECT_STATE.md` | ✅ | on demand | on demand |
+| `devos/CONTEXT.md` | ✅ | on demand | on demand |
+| `devos/tasks/QUEUE.yaml` | ✅ | ticket scope only | ticket scope only |
+| `devos/questions/QUEUE.md` | ✅ | — | — |
+| `devos/logs/{latest}` | ✅ | — | — |
+
+"on demand" = read when ticket context requires. `@import` = transitively loaded via CLAUDE.md frontmatter.
+
+## Dispatch Model
+Every dispatched ticket runs as a **fresh session**. No prior conversation history is injected.
+
+What gets loaded at dispatch:
+- The ticket body (goal / context / dod / constraints / files / verify)
+- Files listed in the session-start read map for the target agent
+- MEMORY.md (auto-memory, if populated)
+
+Implications:
+- Tickets MUST be self-contained. A builder reading only the ticket + SSOT must be able to execute.
+- `context:` field is where CLAUDE1 parks research findings that would otherwise need chat history.
+- **No recursive dispatch**: a running ticket must not invoke `make dispatch` or spawn another agent session. Escalate via `devos/questions/QUEUE.md` instead.
+
+## Memory Save Triggers (auto-memory MEMORY.md)
+CLAUDE1 should write to MEMORY.md proactively — don't wait to be asked — when:
+- User corrects or overrides a default behavior (save the corrected rule + why)
+- User states a preference, habit, or quality bar
+- A project-specific convention is discovered (ticket format, hook behavior, naming)
+- A library/API quirk is confirmed via research (model alias vs pin, etc.)
+- A completed work item produces a reusable insight
+
+Skip when:
+- Easily re-discoverable from code / git log / SSOT
+- One-off session state (current ticket, temporary variables)
+- Duplicates existing memory — update instead of appending
+
+## Operational Guidelines
+- **Session length**: If a single Claude Code session exceeds ~4 hours or context feels thrashing, `/clear` and start fresh with a handoff log. Context rotation preserves late-session quality; repeated compression degrades it.
+- **Edit uniqueness**: `Edit.old_string` must be unique within the file — include 2–3 lines of surrounding context, not just the changed line. On ambiguous matches, run Grep first to see all occurrences before deciding `replace_all` vs. widening the anchor.
+- **Edit failure recovery**: On `File has been modified since read`, Re-Read the file then retry once. On `String not found`, Read/Grep to confirm actual content before rewriting `old_string`. 3 consecutive failures = stop and report. See `devos/prompts/common/edit-failure-recovery.md`.

@@ -108,6 +108,28 @@ create follow-up test-boost tickets if needed.
 
 ---
 
+## SKILLS INTEGRATION
+
+Invoke Claude Code Skills at the right workflow points. The 6 skills below are provided by the Anthropic **superpowers** plugin — see `devos/docs/SKILLS_PLUGIN_INSTALL.md`.
+
+| Workflow | Skill |
+|---|---|
+| PRD intake / ideation | `brainstorming` |
+| Ticket planning | `writing-plans` |
+| Parallel ticket dispatch | `dispatching-parallel-agents` |
+| Bug fix tickets | `systematic-debugging` |
+| PR review | `requesting-code-review` |
+| Completion check | `verification-before-completion` |
+
+Usage:
+- When creating a ticket, add `skills_hint: [skill-name]` to recommend a skill to the builder
+- At session start, follow `devos/prompts/claude/session-start.md`
+- For PRD decomposition, follow `devos/prompts/claude/decompose-prd.md`
+- For PR review, follow `devos/prompts/claude/review-pr.md`
+- On Edit tool failures, consult `devos/prompts/common/edit-failure-recovery.md`
+
+---
+
 ## WHAT YOU CAN MODIFY
 - `devos/**`, `.claude/**`, `.claude-b/**`
 - `AGENTS.md`, `os2.yaml`, `Makefile`
