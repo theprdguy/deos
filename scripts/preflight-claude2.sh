@@ -16,6 +16,32 @@ RESET="$(printf '\033[0m')"
 FAILED=0
 MSGS=()
 
+display_path() {
+  case "$1" in
+    "$HOME"/*) printf "~/%s" "${1#"$HOME"/}" ;;
+    *) printf "%s" "$1" ;;
+  esac
+}
+
+check_skill_symlinks() {
+  local dir="$1"
+  [ -d "$dir" ] || return 0
+
+  local path target display
+  for path in "$dir"/*; do
+    [ -L "$path" ] || continue
+    if [ ! -e "$path" ]; then
+      target="$(readlink "$path")"
+      display="$(display_path "$path")"
+      printf "[preflight] broken skill symlink: %s -> %s (target missing)\n" "$display" "$target" >&2
+      printf "[preflight] fix or rm %s\n" "$display" >&2
+      FAILED=1
+    fi
+  done
+}
+
+check_skill_symlinks "$HOME/.claude/skills"
+
 if [ ! -f "$ROOT_DIR/.claude-b/settings.json" ]; then
   FAILED=1
   MSGS+=("  누락: .claude-b/settings.json (레포 clone이 불완전하거나 .claude-b/ 디렉토리 없음)")

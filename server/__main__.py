@@ -2,6 +2,7 @@
 
 Usage:
     python3 -m server dispatch T-001
+    python3 -m server resume T-001
     python3 -m server dispatch-all
     python3 -m server approve [plan-id]
     python3 -m server reject "reason" [plan-id]
@@ -21,7 +22,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from server.approval import ApprovalManager
 from server.config import get_paths, load_config
 from server.dispatcher import Dispatcher
-from server.ssot import format_logs_summary, format_queue_summary, format_status_summary
+from server.ssot import (
+    AmbiguousPlanMatchError,
+    format_logs_summary,
+    format_queue_summary,
+    format_status_summary,
+    read_queue,
+    validate_queue_file,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,12 +37,35 @@ logging.basicConfig(
 )
 logger = logging.getLogger("os2")
 DEFAULT_LOG_FILE = ".os2-server.log"
+QUEUE_HEADER_STATUSES = ("todo", "doing", "done", "blocked", "parked")
 
 
 def get_log_file_path(config: dict) -> str:
     """Return the configured server log file path with a safe fallback."""
     server_config = (config or {}).get("server") or {}
     return server_config.get("log_file") or DEFAULT_LOG_FILE
+
+
+def format_queue_with_header(queue_path: Path) -> str:
+    """Prepend ticket totals without changing the existing queue body."""
+    data = read_queue(queue_path)
+    tickets = data.get("tickets", [])
+    counts = {status: 0 for status in QUEUE_HEADER_STATUSES}
+    other_count = 0
+
+    for ticket in tickets:
+        status = ticket.get("status")
+        if status in counts:
+            counts[status] += 1
+        else:
+            other_count += 1
+
+    parts = [f"{status}: {counts[status]}" for status in QUEUE_HEADER_STATUSES]
+    if other_count:
+        parts.append(f"other: {other_count}")
+
+    header = f"Total: {len(tickets)} tickets ({', '.join(parts)})"
+    return f"{header}\n{format_queue_summary(queue_path)}"
 
 
 def main() -> None:
@@ -59,7 +90,7 @@ def main() -> None:
         print(format_status_summary(paths["devos"]))
         return
     if cmd == "queue":
-        print(format_queue_summary(paths["queue"]))
+        print(format_queue_with_header(paths["queue"]))
         return
     if cmd == "logs":
         print(format_logs_summary(paths["logs"]))
@@ -73,9 +104,21 @@ def main() -> None:
     if cmd == "approve":
         approval = ApprovalManager(paths["plans"], paths["queue"])
         plan_id = args[1] if len(args) > 1 else None
-        success, msg = approval.approve(plan_id)
+        try:
+            success, msg = approval.approve(plan_id)
+        except AmbiguousPlanMatchError as exc:
+            print(exc, file=sys.stderr)
+            sys.exit(1)
+        if not success:
+            print(msg, file=sys.stderr)
+            sys.exit(1)
         print(msg)
         if success:
+            try:
+                validate_queue_file(paths["queue"])
+            except Exception as exc:
+                print(f"Queue validation failed after approval: {exc}", file=sys.stderr)
+                sys.exit(1)
             dispatcher = Dispatcher(config=config, paths=paths)
             results = dispatcher.dispatch_all_todo()
             for tid, msg in results:
@@ -89,7 +132,14 @@ def main() -> None:
         approval = ApprovalManager(paths["plans"], paths["queue"])
         reason = args[1]
         plan_id = args[2] if len(args) > 2 else None
-        success, msg = approval.reject(reason, plan_id)
+        try:
+            success, msg = approval.reject(reason, plan_id)
+        except (AmbiguousPlanMatchError, FileNotFoundError) as exc:
+            print(exc, file=sys.stderr)
+            sys.exit(1)
+        if not success:
+            print(msg, file=sys.stderr)
+            sys.exit(1)
         print(msg)
         return
 
@@ -101,6 +151,20 @@ def main() -> None:
         dispatcher = Dispatcher(config=config, paths=paths)
         ticket_id = args[1]
         success, msg = dispatcher.dispatch(ticket_id)
+        print(msg)
+        dispatcher.wait_all()
+        return
+
+    if cmd == "resume":
+        if len(args) < 2:
+            print("Usage: python3 -m server resume T-001", file=sys.stderr)
+            sys.exit(1)
+        dispatcher = Dispatcher(config=config, paths=paths)
+        ticket_id = args[1]
+        success, msg = dispatcher.resume(ticket_id)
+        if not success:
+            print(msg, file=sys.stderr)
+            sys.exit(1)
         print(msg)
         dispatcher.wait_all()
         return

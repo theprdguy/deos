@@ -1,62 +1,65 @@
-# os2 Makefile
-# Usage: make <target>
+# Vibe Coding OS — Makefile
+# Usage: make <target>     (run `make help` for a full list)
 
-.PHONY: start stop restart ps handoff pickup server status queue logs pending dispatch dispatch-all approve reject test test-queue-schema scan-secrets security-check check-tdd-first-commit pr-check install setup help
+.PHONY: start stop restart ps tail handoff pickup install setup install-daemon uninstall-daemon \
+        status queue logs pending approve reject dispatch resume dispatch-all \
+        test test-queue-schema scan-secrets security-check check-tdd-first-commit pr-check \
+        release-template help
 
 PID_FILE := .os2-server.pid
 LOG_FILE := $(shell .venv/bin/python3 -c 'from pathlib import Path; import yaml; default = ".os2-server.log"; path = Path("os2.yaml"); config = yaml.safe_load(path.read_text()) if path.exists() else {}; print((((config or {}).get("server") or {}).get("log_file")) or default)')
 
-# ── Server 시작/종료 ──────────────────────────────────────────────────────────
+# ── Server lifecycle ─────────────────────────────────────────────────────────
 
-## 서버 시작 (백그라운드)
+## Start the dispatcher server (background)
 start:
 	@if [ -f $(PID_FILE) ] && kill -0 $$(cat $(PID_FILE)) 2>/dev/null; then \
-		echo "이미 실행 중 (PID: $$(cat $(PID_FILE)))"; \
+		echo "Already running (PID: $$(cat $(PID_FILE)))"; \
 	else \
 		echo "Log file: $(LOG_FILE)"; \
 		.venv/bin/python3 -m server >> $(LOG_FILE) 2>&1 & echo $$! > $(PID_FILE); \
-		echo "os2-server 시작 (PID: $$(cat $(PID_FILE)), 로그: $(LOG_FILE))"; \
+		echo "os2-server started (PID: $$(cat $(PID_FILE)), log: $(LOG_FILE))"; \
 	fi
 
-## 서버 종료
+## Stop the dispatcher server
 stop:
 	@if [ -f $(PID_FILE) ] && kill -0 $$(cat $(PID_FILE)) 2>/dev/null; then \
 		kill $$(cat $(PID_FILE)) && rm -f $(PID_FILE); \
-		echo "os2-server 종료 완료"; \
+		echo "os2-server stopped"; \
 	else \
-		echo "실행 중인 서버 없음"; rm -f $(PID_FILE); \
+		echo "No running server"; rm -f $(PID_FILE); \
 	fi
 
-## 서버 재시작
+## Restart the dispatcher server
 restart: stop start
 
-## 서버 상태 확인
+## Show server status
 ps:
 	@if [ -f $(PID_FILE) ] && kill -0 $$(cat $(PID_FILE)) 2>/dev/null; then \
-		echo "실행 중 (PID: $$(cat $(PID_FILE)))"; \
+		echo "Running (PID: $$(cat $(PID_FILE)))"; \
 	else \
-		echo "중지됨"; \
+		echo "Stopped"; \
 	fi
 
-## 서버 로그 실시간 보기
+## Tail the server log
 tail:
 	@tail -f $(LOG_FILE)
 
-# ── 두 컴퓨터 전환 ─────────────────────────────────────────────────────────────
+# ── Multi-machine handoff ────────────────────────────────────────────────────
 
-## 이 컴에서 작업 마무리 후 다른 컴으로 넘기기 (stop → git push)
+## Wrap up on this machine: stop server, commit, push
 handoff:
 	@make stop
 	@git add -A && git diff --cached --quiet || git commit -m "handoff: $(shell date '+%Y-%m-%d %H:%M')"
 	@git push
-	@echo "핸드오프 완료. 다른 컴에서 'make pickup' 실행"
+	@echo "Handoff complete. Run 'make pickup' on the other machine."
 
-## 다른 컴에서 이어받기 (git pull → start)
+## Resume on another machine: pull, preflight, start
 pickup:
 	@git pull
 	@bash scripts/preflight-claude2.sh
 	@make start
-	@echo "이어받기 완료"
+	@echo "Pickup complete."
 
 ## Install Python dependencies
 install:
@@ -66,17 +69,17 @@ install:
 setup:
 	bash scripts/setup.sh
 
-## 서브 컴 전용: launchd에 등록 (부팅 시 자동 시작)
+## Sub-machine only: register the server with launchd (auto-start on boot)
 install-daemon:
 	@cp com.os2.server.plist ~/Library/LaunchAgents/
 	@launchctl load ~/Library/LaunchAgents/com.os2.server.plist
-	@echo "launchd 등록 완료 — 재부팅 후에도 자동 시작됩니다"
+	@echo "Registered with launchd — auto-starts on reboot"
 
-## 서브 컴 전용: launchd 해제
+## Sub-machine only: unregister the server from launchd
 uninstall-daemon:
 	@launchctl unload ~/Library/LaunchAgents/com.os2.server.plist
 	@rm -f ~/Library/LaunchAgents/com.os2.server.plist
-	@echo "launchd 해제 완료"
+	@echo "Unregistered from launchd"
 
 # ── Status queries (no LLM) ──────────────────────────────────────────────────
 
@@ -109,13 +112,19 @@ reject:
 
 # ── Dispatch ─────────────────────────────────────────────────────────────────
 
-## Dispatch a ticket: make dispatch T=T-001
+## Dispatch a single ticket: make dispatch T=T-001
 dispatch:
 	@if [ -z "$(T)" ]; then echo "Usage: make dispatch T=T-001"; exit 1; fi
 	@bash scripts/preflight-claude2.sh
 	@.venv/bin/python3 -m server dispatch $(T)
 
-## Dispatch all todo tickets
+## Resume a blocked ticket and dispatch it: make resume T=T-001
+resume:
+	@if [ -z "$(T)" ]; then echo "Usage: make resume T=T-001"; exit 1; fi
+	@bash scripts/preflight-claude2.sh
+	@.venv/bin/python3 -m server resume $(T)
+
+## Dispatch every todo ticket in order
 dispatch-all:
 	@bash scripts/preflight-claude2.sh
 	@.venv/bin/python3 -m server dispatch-all
@@ -144,7 +153,7 @@ scan-secrets:
 		exit 1; \
 	fi
 
-## Run security checks (tag-based gate for auth tickets)
+## Run security checks (contract sync + ticket scope + session log)
 security-check:
 	@bash scripts/check-contract-sync.sh
 	@bash scripts/check-ticket-scope.sh
@@ -154,7 +163,7 @@ security-check:
 check-tdd-first-commit:
 	@bash scripts/check-tdd-first-commit.sh
 
-## Run all checks
+## Run all baseline gates
 pr-check:
 	@status=0; \
 	$(MAKE) --no-print-directory scan-secrets || status=1; \
@@ -167,45 +176,49 @@ pr-check:
 		exit $$status; \
 	fi
 
-# ── Help ─────────────────────────────────────────────────────────────────────
-
-help:
-	@echo "os2 Agentic Coding OS v3.0"
-	@echo ""
-	@echo "Setup:"
-	@echo "  make setup            최초 설정 자동화"
-	@echo "  make install          Python 의존성 설치"
-	@echo ""
-	@echo "Server:"
-	@echo "  make start            서버 시작 (백그라운드)"
-	@echo "  make stop             서버 종료"
-	@echo "  make restart          서버 재시작"
-	@echo "  make ps               서버 상태 확인"
-	@echo "  make tail             서버 로그 실시간"
-	@echo ""
-	@echo "컴퓨터 전환:"
-	@echo "  make handoff          서버 종료 + git push"
-	@echo "  make pickup           git pull + 서버 시작"
-	@echo ""
-	@echo "Status:"
-	@echo "  make status           프로젝트 상태"
-	@echo "  make queue            티켓 큐"
-	@echo "  make logs             최근 세션 로그"
-	@echo "  make pending          승인 대기 플랜"
-	@echo ""
-	@echo "Approval:"
-	@echo "  make approve          최신 플랜 승인"
-	@echo "  make reject R='...'   최신 플랜 거절"
-	@echo ""
-	@echo "Dispatch:"
-	@echo "  make dispatch T=T-001 티켓 디스패치"
-	@echo "  make dispatch-all     준비된 티켓 전체 디스패치"
-	@echo ""
-	@echo "Gates:"
-	@echo "  make test             테스트 실행"
-	@echo "  make test-queue-schema queue schema 단위 테스트"
-	@echo "  make scan-secrets     시크릿 스캔"
-	@echo "  make pr-check         전체 검증"
+# ── Release / template ───────────────────────────────────────────────────────
 
 release-template:
 	bash scripts/release-template.sh
+
+# ── Help ─────────────────────────────────────────────────────────────────────
+
+help:
+	@echo "Vibe Coding OS — v3.4"
+	@echo ""
+	@echo "Setup:"
+	@echo "  make setup              First-time setup wizard"
+	@echo "  make install            Install Python dependencies"
+	@echo ""
+	@echo "Server:"
+	@echo "  make start              Start dispatcher (background)"
+	@echo "  make stop               Stop dispatcher"
+	@echo "  make restart            Restart dispatcher"
+	@echo "  make ps                 Show server status"
+	@echo "  make tail               Tail server log"
+	@echo ""
+	@echo "Multi-machine:"
+	@echo "  make handoff            Stop server + git push"
+	@echo "  make pickup             git pull + start server"
+	@echo "  make install-daemon     Register launchd plist (sub-machine)"
+	@echo "  make uninstall-daemon   Unregister launchd plist"
+	@echo ""
+	@echo "Status:"
+	@echo "  make status             Show project status"
+	@echo "  make queue              Show ticket queue"
+	@echo "  make logs               Show recent session logs"
+	@echo "  make pending            Show pending approval plans"
+	@echo ""
+	@echo "Approval:"
+	@echo "  make approve            Approve latest pending plan"
+	@echo "  make reject R='...'     Reject latest pending plan"
+	@echo ""
+	@echo "Dispatch:"
+	@echo "  make dispatch T=T-001   Dispatch a single ticket"
+	@echo "  make resume T=T-001     Resume a blocked ticket"
+	@echo "  make dispatch-all       Dispatch every todo ticket"
+	@echo ""
+	@echo "Gates:"
+	@echo "  make test               Run tests (wire to your stack)"
+	@echo "  make scan-secrets       Run gitleaks secret scan"
+	@echo "  make pr-check           Run all baseline gates"

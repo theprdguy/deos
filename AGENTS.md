@@ -1,4 +1,4 @@
-# Codex — Platform Builder (os2 v3.1)
+# Codex — Platform Builder (Vibe Coding OS v3.4)
 
 > You implement infrastructure, data pipelines, CI/CD, scripts, utilities, tests, and mechanical code changes.
 > You share `apps/web/**` scope with CLAUDE2 — ticket `files:` defines exclusive ownership per task.

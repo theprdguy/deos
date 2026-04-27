@@ -112,6 +112,7 @@ create follow-up test-boost tickets if needed.
 
 Invoke Claude Code Skills at the right workflow points. The 6 skills below are provided by the Anthropic **superpowers** plugin — see `devos/docs/SKILLS_PLUGIN_INSTALL.md`.
 
+### Superpowers plugin
 | Workflow | Skill |
 |---|---|
 | PRD intake / ideation | `brainstorming` |
@@ -121,12 +122,25 @@ Invoke Claude Code Skills at the right workflow points. The 6 skills below are p
 | PR review | `requesting-code-review` |
 | Completion check | `verification-before-completion` |
 
+### Built-in prompt patterns (devos/prompts/)
+| Workflow | Prompt |
+|---|---|
+| PRD intake checklist (protect non-developer users) | `devos/prompts/claude/prd-intake-checklist.md` |
+| Adversarial PR review (FORCE stance, BLOCKER/WARNING) | `devos/prompts/claude/review-adversarial.md` |
+| Goal-backward verification (trace user journey backwards from goal) | `devos/prompts/claude/verify-goal-backward.md` |
+| Cross-model review (CODEX second opinion on Claude output) | `devos/prompts/claude/cross-model-review.md` |
+| Security audit (OWASP A01–A10 + STRIDE) | `devos/prompts/claude/security-audit.md` |
+| Scope-reduction prohibition (banned-vocabulary lint) | `devos/prompts/common/scope-reduction-prohibition.md` |
+
 Usage:
 - When creating a ticket, add `skills_hint: [skill-name]` to recommend a skill to the builder
 - At session start, follow `devos/prompts/claude/session-start.md`
-- For PRD decomposition, follow `devos/prompts/claude/decompose-prd.md`
-- For PR review, follow `devos/prompts/claude/review-pr.md`
+- For PRD decomposition, follow `devos/prompts/claude/decompose-prd.md` (Step 0 intake checklist is mandatory)
+- For PR review, follow `devos/prompts/claude/review-pr.md` (combine the adversarial pass)
+- For tickets touching auth / payment / permissions / external input, set `security_audit: true` (auto-forced)
+- For critical-path tickets, set `cross_model: true` to invoke the CODEX second opinion
 - On Edit tool failures, consult `devos/prompts/common/edit-failure-recovery.md`
+- ETHOS reference: `devos/ETHOS.md` (Iron Laws + Boil-the-Lake + non-developer protection principles)
 
 ---
 

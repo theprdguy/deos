@@ -1,4 +1,4 @@
-# Architecture (os2 v3.1)
+# Architecture (Vibe Coding OS v3.4)
 
 ## System Overview
 

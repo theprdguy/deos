@@ -2,7 +2,21 @@
 # Guard: Prevent Claude 1 (Planner) from writing implementation code.
 # Used as a Claude Code PreToolUse hook for Write/Edit tools.
 #
-# Exit 0 = allow, Exit 2 = block with message
+# Modes:
+#   default (no flag) — block (exit 2) on impl path violation
+#   --advisory        — print warning to stderr but allow (exit 0)
+#
+# The advisory mode is useful for sessions where the user has explicitly
+# acknowledged that some impl-path edits are needed (e.g., during cherry-pick
+# integration work) but still wants visibility into boundary crossings.
+# Inspired by GSD's gsd-workflow-guard.js advisory pattern.
+
+ADVISORY=0
+for arg in "$@"; do
+  if [ "$arg" = "--advisory" ]; then
+    ADVISORY=1
+  fi
+done
 
 INPUT=$(cat)
 
@@ -36,15 +50,26 @@ IMPL_PATTERNS=(
 
 for pattern in "${IMPL_PATTERNS[@]}"; do
   if echo "$FILE_PATH" | grep -qE "(^|/)${pattern}"; then
+    if [ "$ADVISORY" = "1" ]; then
+      # Advisory mode: print to stderr, allow tool to proceed
+      echo "" >&2
+      echo "⚠ PLANNER ADVISORY: writing to an implementation path." >&2
+      echo "   File: $FILE_PATH" >&2
+      echo "   This edit is allowed because --advisory is set, but it crosses CLAUDE1's role boundary." >&2
+      echo "   Consider: ticket in devos/tasks/QUEUE.yaml owned by CLAUDE2/CODEX." >&2
+      echo "" >&2
+      exit 0
+    fi
     echo ""
     echo "PLANNER GUARD: You are trying to write to an implementation file."
     echo "   File: $FILE_PATH"
     echo ""
     echo "   As Planner (Claude 1), you must NOT write implementation code."
     echo "   Instead: Create a ticket in devos/tasks/QUEUE.yaml"
-    echo "   Owner: CLAUDE2 (app), CODEX (infra/data)"
+    echo "   Owner: CLAUDE2 (backend), CODEX (infra/data), or GEMINI (UI)"
     echo ""
     echo "   Override: If this is a config/setup file, the user can approve."
+    echo "   Advisory: pass --advisory to log violations without blocking."
     echo ""
     exit 2
   fi

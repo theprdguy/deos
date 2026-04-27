@@ -1,4 +1,8 @@
 {
+  "statusLine": {
+    "type": "command",
+    "command": "bash .claude/hooks/statusline-wrapper.sh"
+  },
   "hooks": {
     "SessionStart": [
       {
@@ -26,6 +30,16 @@
           {
             "type": "command",
             "command": "bash .claude/hooks/guard-no-impl.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/context-monitor.js"
           }
         ]
       }

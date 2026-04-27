@@ -46,7 +46,7 @@ load_env_file() {
   fi
 }
 
-section "1/4 CLI 도구 확인"
+section "1/4 CLI tools"
 
 check_required() {
   local tool="$1"
@@ -97,7 +97,7 @@ check_gitleaks() {
 
 check_gitleaks
 
-section "2/4 Python 의존성 설치"
+section "2/4 Python dependencies"
 VENV_DIR="$ROOT_DIR/.venv"
 if [ ! -d "$VENV_DIR" ]; then
   python3 -m venv "$VENV_DIR"
@@ -108,12 +108,11 @@ fi
 "$VENV_DIR/bin/pip" install -r "$ROOT_DIR/requirements.txt" -q
 success "Installed Python dependencies"
 
-section "3/4 환경변수 설정"
+section "3/4 Environment variables"
 load_env_file
-success "TG 토큰은 os2-hub에서 설정합니다"
-success "Run: /Users/hoanshin/Desktop/thePRD/os2-hub/scripts/setup.sh"
+success "Copy .env.example to .env and fill in required keys (if any)."
 
-section "4/4 Claude 2 인증 확인"
+section "4/4 Claude 2 authentication"
 if bash "$ROOT_DIR/scripts/preflight-claude2.sh" --advisory; then
   :
 else

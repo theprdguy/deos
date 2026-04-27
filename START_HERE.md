@@ -1,4 +1,4 @@
-# START HERE — Vibe Coding OS v3.1
+# START HERE — Vibe Coding OS v3.4
 
 ## First-time setup
 
@@ -101,6 +101,7 @@ make reject R='...'   # reject with reason
 
 # Dispatch
 make dispatch T=T-001 # single ticket
+make resume T=T-001   # resume a blocked ticket
 make dispatch-all     # all todo tickets
 
 # Gates

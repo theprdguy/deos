@@ -2,6 +2,64 @@
 
 set -euo pipefail
 
+SCOPE_REDUCTION_PATTERN='(^|[^[:alnum:]_])(v1[[:space:]]*로|v1[[:space:]]*으로[[:space:]]*일단|TODO([[:space:]]*:[[:space:]]*implement)?|FIXME|XXX|WIP[[:space:]-]+placeholder|placeholder[[:space:]-]+for[[:space:]-]+now|stub[[:space:]-]+for[[:space:]-]+now|static[[:space:]-]+for[[:space:]-]+now|나중에|임시|추후|simplified([[:space:]-]+version)?|basic[[:space:]-]+version|minimal[[:space:]-]+implementation|quick[[:space:]-]+fix|wired[[:space:]-]+later|skip[[:space:]-]+for[[:space:]-]+now|future[[:space:]-]+enhancement|hardcoded[[:space:]-]+for[[:space:]-]+now)([^[:alnum:]_]|$)'
+
+run_scope_reduction_self_test() {
+  local status=0
+  local documented_pattern
+  local label expected text actual
+
+  documented_pattern="$(
+    python3 - <<'PY'
+from pathlib import Path
+
+prompt = Path("devos/prompts/common/scope-reduction-prohibition.md")
+marker = "SCOPE_REDUCTION_PATTERN="
+for line in prompt.read_text().splitlines():
+    stripped = line.strip()
+    if stripped.startswith(marker):
+        print(stripped.split("=", 1)[1].strip().strip("'"))
+        break
+PY
+  )"
+
+  if [ "$documented_pattern" = "$SCOPE_REDUCTION_PATTERN" ]; then
+    printf 'PASS scope-reduction pattern sync: prompt and script match\n'
+  else
+    printf 'FAIL scope-reduction pattern sync: prompt and script differ\n'
+    status=1
+  fi
+
+  while IFS=$'\t' read -r label expected text; do
+    [ -n "$label" ] || continue
+    if printf '%s\n' "$text" | grep -Eiq "$SCOPE_REDUCTION_PATTERN"; then
+      actual="match"
+    else
+      actual="nomatch"
+    fi
+
+    if [ "$actual" = "$expected" ]; then
+      printf 'PASS scope-reduction fixture: %s (%s)\n' "$label" "$actual"
+    else
+      printf 'FAIL scope-reduction fixture: %s expected %s got %s\n' "$label" "$expected" "$actual"
+      status=1
+    fi
+  done <<'EOF'
+positive-wip-placeholder	match	WIP placeholder remains blocked.
+positive-placeholder-for-now	match	Use placeholder for now until the API is wired.
+positive-todo-implement	match	TODO: implement validation later.
+negative-fallback-placeholder-ui	nomatch	Use fallback placeholder UI copy while loading.
+negative-data-placeholder	nomatch	데이터 placeholder 명칭은 UX 용어로 허용.
+EOF
+
+  return "$status"
+}
+
+if [ "${1:-}" = "--self-test-scope-reduction" ]; then
+  run_scope_reduction_self_test
+  exit $?
+fi
+
 printf '[3/4] ticket-scope\n'
 
 ROOT_DIR="$(pwd)"

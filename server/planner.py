@@ -56,7 +56,8 @@ When decomposing a PRD, output tickets in this JSON format inside a ```json bloc
       "dod": ["acceptance criterion"],
       "files": ["apps/api/src/feature.ts"],
       "verify": "make pr-check",
-      "deps": []
+      "deps": [],
+      "contract_impact": "none"
     }}
   ]
 }}

@@ -1,4 +1,4 @@
-# Operation Guide (os2 v3.1)
+# Operation Guide (Vibe Coding OS v3.4)
 
 ## System Structure
 
