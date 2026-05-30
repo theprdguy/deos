@@ -1,12 +1,17 @@
-# AI Operating Rules (Vibe Coding OS v3.4)
+# AI Operating Rules (OS3 v0.1)
+
+> **Sub-agent (builder/reviewer/security/designer) 부트용 슬림 버전: `devos/AI-core.md`.**
+> 본 파일은 CLAUDE1 main + on-demand 참조용 전문. sub-agent 가 이 전문을 Read 하면
+> 1 회당 ~4K 토큰 소비 — 가급적 AI-core.md 로 시작하고 필요 시 본 파일을 부분 Read.
 
 ## Purpose
-Run continuous parallel work across 3 AI agents from a single laptop.
-Claude 1 plans and researches. Claude 2 and Codex implement.
+Run continuous parallel work across 1 main + N sub-agents + 1 external (CODEX) from a single laptop.
+Claude 1 plans, researches, and **orchestrates** implementation via in-session sub-agents
+(builder/reviewer/designer/security). CODEX implements platform tickets + b' adaptive
+cross-model second opinion. (옛 Claude 2 별도 Account B subprocess 모델은 W6에서 sunset, builder sub-agent로 흡수.)
 
 ## Builder ETHOS
-> When judgment criteria conflict, `devos/ETHOS.md` is the tiebreaker. It defines the
-> Iron Laws + Boil-the-Lake principle + Honest Cost Table + non-developer protection.
+> 판단 기준이 일관되지 않을 때 `devos/ETHOS.md`가 결정한다. Iron Laws + Boil-the-Lake + Honest Cost Table + 비개발자 보호 원칙을 정의.
 
 ## SSOT Precedence
 
@@ -20,34 +25,56 @@ Claude 1 plans and researches. Claude 2 and Codex implement.
 7) Chat logs (least reliable)
 
 ### Session-start read map (which agent reads what)
-| File | CLAUDE1 | CLAUDE2 | CODEX |
-|---|---|---|---|
-| `devos/AI.md` | ✅ (via @import) | ✅ (via @import) | ✅ |
-| `.claude/CLAUDE.md` | ✅ | — | — |
-| `.claude-b/CLAUDE.md` | — | ✅ | — |
-| `AGENTS.md` | — | — | ✅ |
-| `devos/docs/BUILDER_GUIDE.md` | — | ✅ | ✅ |
-| `devos/PROJECT_STATE.md` | ✅ | on demand | on demand |
-| `devos/CONTEXT.md` | ✅ | on demand | on demand |
-| `devos/tasks/QUEUE.yaml` | ✅ | ticket scope only | ticket scope only |
-| `devos/questions/QUEUE.md` | ✅ | — | — |
-| `devos/logs/{latest}` | ✅ | — | — |
+| File | CLAUDE1 main | builder (sub) | reviewer (sub) | designer (sub) | security (sub) | CODEX | (deprecated) CLAUDE2 |
+|---|---|---|---|---|---|---|---|
+| `devos/AI.md` | ✅ (via @import) | ✅ (sub-agent first action) | ✅ (sub-agent first action) | ✅ (sub-agent first action) | ✅ (sub-agent first action) | ✅ | ✅ (until W6) |
+| `.claude/CLAUDE.md` | ✅ | — | — | — | — | — | — |
+| `.claude/agents/{name}.md` | — | self (own definition) | self | self | self | — | — |
+| ~~`.claude-b/CLAUDE.md`~~ (제거됨, W6 sunset 2026-05-13) | — | — | — | — | — | — | — |
+| `AGENTS.md` | — | — | — | — | — | ✅ | — |
+| `devos/docs/BUILDER_GUIDE.md` | — | ✅ | — | — | — | ✅ | ✅ (until W6) |
+| `devos/prompts/claude/dispatch-orchestration.md` | ✅ | — | — | — | — | — | — |
+| `devos/prompts/claude/review-adversarial.md` | — | — | ✅ | — | — | — | — |
+| `devos/prompts/claude/designer-review.md` | — | — | — | ✅ | — | — | — |
+| `devos/prompts/claude/security-audit.md` | — | — | — | — | ✅ | — | — |
+| `devos/PROJECT_STATE.md` | ✅ | on demand | on demand | on demand | on demand | on demand | on demand |
+| `devos/CONTEXT.md` | ✅ | on demand | on demand | on demand | on demand | on demand | on demand |
+| `devos/tasks/QUEUE.yaml` | ✅ | ticket scope only | ticket scope (read diff) | ticket scope (read diff) | ticket scope (read diff) | ticket scope only | ticket scope only |
+| `devos/tasks/ARCHIVE.yaml` | on demand | on demand (fallback) | on demand | on demand | on demand | on demand (fallback) | on demand (fallback) |
+| `devos/questions/QUEUE.md` | ✅ | — | — | — | — | — | — |
+| `devos/logs/{latest}` | ✅ | — | — | — | — | — | — |
 
 "on demand" = read when ticket context requires. `@import` = transitively loaded via CLAUDE.md frontmatter.
 
+**QUEUE/ARCHIVE 분리** (T-OS2-CB-01 / ARCH-01): QUEUE.yaml은 active 티켓(todo/doing/blocked/parked)만 유지하고 done은 `devos/tasks/ARCHIVE.yaml`로 이관한다. dispatcher의 ticket lookup은 QUEUE → ARCHIVE 순으로 검색하므로 archive 된 ticket id 도 참조 가능. CLAUDE1은 done 누적 시(≥10건 또는 세션 종료) `bin/os3 archive` 실행. 자세한 운영 규칙은 `.claude/CLAUDE.md` § DONE ARCHIVE 참조.
+
 ## Dispatch Model
 
-Every dispatched ticket runs as a **fresh session**. No prior conversation history is injected.
+**OS3**: 두 dispatch 모드 공존.
 
+### A. In-session sub-agent (BUILDER)
+- CLAUDE1 main 안에서 `Agent(subagent_type="builder", prompt=...)` 호출
+- own context window — main conversation history 미상속, 단 같은 세션 내 spawn (저레이턴시)
+- ticket 처리 후 Done/Block/Log 요약을 main 으로 반환
+- **/dispatch slash 진입점 (CLAUDE1 main 안에서만 호출)** — Bash 에서 `bin/os3 dispatch X-BUILDER` 시 안내 + exit 2
+- review chain: builder 완료 후 reviewer/security/designer sub-agent 가 parallel multi-tool-call 로 spawn (read-only)
+
+### B. External subprocess (CODEX)
+- Bash 에서 `bin/os3 dispatch-codex X` 또는 `bin/os3 dispatch X` (owner 자동 감지)
+- 옛 dispatch 모델 그대로 — fresh subprocess, 컨텍스트 0 부터 시작
+- session log 작성 후 main 이 log Read 로 결과 수집 + review chain 적용
+
+### Common
 What gets loaded at dispatch:
-- The ticket body (goal / context / dod / constraints / files / verify)
-- Files listed in the session-start read map for the target agent
-- MEMORY.md (auto-memory, if populated)
+- BUILDER: ticket body + sub-agent definition (`.claude/agents/builder.md`) + first-action Read (devos/AI.md, BUILDER_GUIDE.md, prompts/claude2/session-start.md — 디렉터리 명은 historical, TBD-5)
+- CODEX: ticket body + AGENTS.md + BUILDER_GUIDE.md + MEMORY.md
+- ~~CLAUDE2~~ — sunset 2026-05-13 (W6 완료, Account B 비활성)
 
 Implications:
 - Tickets MUST be self-contained. A builder reading only the ticket + SSOT must be able to execute.
-- `context:` field is where CLAUDE1 parks research findings that would otherwise need chat history.
-- **No recursive dispatch**: a running ticket must not invoke `make dispatch` or spawn another agent session. Escalate via `devos/questions/QUEUE.md` instead.
+- `context:` field is where CLAUDE1 parks research findings.
+- **No recursive dispatch**: a running ticket / sub-agent must not invoke `bin/os3 dispatch` or spawn another sub-agent. Escalate via `devos/questions/QUEUE.md` instead.
+- **b' adaptive trigger**: reviewer/security sub-agent 의 `uncertainty=true` 시 main 이 자동 `cross_model_codex` 호출 (subprocess) — 평상 비용 0, 의심 시만 vendor diversity 안전망
 
 ## Memory Save Triggers (auto-memory MEMORY.md)
 
@@ -63,30 +90,38 @@ Skip when:
 - One-off session state (current ticket, temporary variables)
 - Duplicates existing memory — update instead of appending
 
+Session-end trigger detail: see `devos/prompts/claude/session-end.md` — 회고 발견 반복 패턴 (≥ 2회) 시 memory entry 작성 권장.
+
 ## Operational Guidelines
 
 - **Session length**: If a single Claude Code session exceeds ~4 hours or context feels thrashing, `/clear` and start fresh with a handoff log. Context rotation preserves late-session quality; repeated compression degrades it.
 - **Edit uniqueness**: `Edit.old_string` must be unique within the file — include 2–3 lines of surrounding context, not just the changed line. On ambiguous matches, run Grep first to see all occurrences before deciding `replace_all` vs. widening the anchor.
-- **Edit failure recovery**: On `File has been modified since read`, Re-Read the file then retry once. On `String not found`, Read/Grep to confirm actual content before rewriting `old_string`. 3 consecutive failures = stop and report. See `devos/prompts/common/edit-failure-recovery.md`.
+- **Edit failure recovery**: On `File has been modified since read`, Re-Read the file then retry once. On `String not found`, Read/Grep to confirm actual content before rewriting `old_string`. 3 consecutive failures = stop and report.
 
 ## Roles
 
-| Agent | Role | Can Modify | Cannot Modify |
-|-------|------|-----------|---------------|
-| **CLAUDE1** | Planner + Researcher + SSOT manager | devos/**, config files, AGENTS.md | apps/**, packages/**, tests/** |
-| **CLAUDE2** | App builder (backend + GUI design/impl) | apps/api/src/**, apps/web/** | devos/ |
-| **CODEX** | Platform builder (infra + data + tests + mechanical) | apps/web/**, apps/api/**, packages/**, infra/**, scripts/**, tests/**, styles/** | devos/ |
+| Agent | Role | Mode | Model | Can Modify | Cannot Modify |
+|-------|------|------|-------|-----------|---------------|
+| **CLAUDE1 main** | Planner + Researcher + SSOT manager + **Orchestrator** | interactive | Opus (user-pinned per session) | devos/**, .claude/**, .claude/agents/**, AGENTS.md, osn.yaml (compatibility filename), server/** (bootstrap 한시) | apps/**, packages/**, scripts/**, infra/**, tests/** (delegate to sub-agent) |
+| **builder** (subagent: true) | App + platform implementer (CLAUDE2 후신) | in-session | sonnet (pinned in `.claude/agents/builder.md`) | apps/api/src/**, apps/web/**, packages/shared/** | devos/tasks/QUEUE.yaml, devos/PROJECT_STATE.md |
+| **reviewer** (subagent: true) | Adversarial PR reviewer | in-session, **READ-ONLY** | opus | (none — 권한 시스템 강제) | (everything) |
+| **designer** (subagent: true) | UI/UX 1차 필터 | in-session, **READ-ONLY** | sonnet | (none) | (everything) |
+| **security** (subagent: true) | OWASP/STRIDE auditor | in-session, **READ-ONLY** | opus | (none) | (everything) |
+| **CODEX** | Platform builder + b' cross-model | external CLI subprocess | external | apps/web/**, apps/api/**, packages/**, infra/**, scripts/**, tests/**, styles/** | devos/ |
+| ~~**CLAUDE2**~~ | ~~App builder~~ | **DEPRECATED — sunset W6** | ~~Sonnet, Account B~~ | ~~apps/api/src/**, apps/web/**~~ | — |
 
 ## Role Boundaries
-- CLAUDE1 MUST NOT write implementation code
-- CLAUDE1 creates tickets with WHAT + CONTEXT; builders decide HOW
-- Builders MUST NOT modify files outside their ticket scope
-- Builders MUST NOT make architectural decisions — queue questions instead
+- CLAUDE1 main MUST NOT write implementation code directly — delegate via `Agent(builder, ...)` inside `/dispatch`
+- CLAUDE1 main MUST NOT review builder output directly — always invoke reviewer sub-agent (read-only enforcement)
+- CLAUDE1 main creates tickets with WHAT + CONTEXT; builder/CODEX decide HOW
+- builder MUST NOT modify files outside ticket scope (`files:` field)
+- builder/CODEX MUST NOT make architectural decisions — queue questions instead
+- reviewer/designer/security sub-agents have READ-ONLY tools — physically cannot modify (구조적 객관성)
 
 ## Model Tiering
 - **CLAUDE1**: user selects per session via `/model` + `/effort`. Not pinned in `.claude/settings.json`.
   Default guidance — heavy planning/review/mutation judgment: Opus 4.7 with `xhigh`. Light triage/status: Sonnet or Opus at default effort.
-- **CLAUDE2**: pinned to `"sonnet"` alias in `.claude-b/settings.json` (auto-tracks latest Sonnet). `/fast` mode available.
+- ~~**CLAUDE2**: pinned to `"sonnet"` alias in `.claude-b/settings.json`~~ (sunset 2026-05-13).
 - **CODEX**: `codex` CLI — Anthropic model rollouts do not apply.
 
 Pinning principle: prefer family aliases (`sonnet`, `opus`) over minor-version IDs so releases propagate without manual config edits. Pin a specific version only with a reproducibility rationale.
@@ -116,15 +151,23 @@ Pinning principle: prefer family aliases (`sonnet`, `opus`) over minor-version I
 - `security_audit`: `true` | `false` (default `false`). **Auto-forced `true`** for tickets
   touching auth, payment, permissions, or external input. Triggers OWASP/STRIDE review
   per `devos/prompts/claude/security-audit.md`.
+- `ethos`: `high` | `normal` (default `normal`). **Auto-detected `high`** for tickets whose
+  goal/dod contains ETHOS keywords (Korean: 삭제/영구/결제/공개/권한/비공개/비밀번호/토큰/
+  인증/환불/복구 불가. English: delete/permanent/payment/auth/credential/refund). `high`
+  tickets route to **critical** classification in review chain (full reviewer + security +
+  cross_model auto). Added 2026-05-14 (balanced rebalance Phase 2).
+- `paired_run`: `true` | `false` (default `false`). Phase 3/4 paired-run mode. When `true`,
+  dispatcher invokes both the current builder/CODEX path AND the alternate (Haiku/CODEX) path
+  for the same ticket; results recorded in `devos/docs/paired-run/{date}-{id}.yaml`. Used to
+  gather empirical data before promoting alternate to default. Added 2026-05-14.
 
 ## Scope-Reduction Prohibition
 Ticket goal/dod/context must not contain scope-reducing vocabulary
-("v1 for now", "static for now", "TODO", "placeholder", "temporary", "later",
-"simplified", "basic version", "minimal implementation", "quick fix", "wired later",
-"skip for now", "future enhancement", "hardcoded for now"). Full list and exceptions:
-`devos/prompts/common/scope-reduction-prohibition.md`. The Step 4 self-check in
-`decompose-prd.md` is mandatory — `grep` must return zero hits before a ticket can
-enter the queue.
+("v1으로 일단", "static for now", "TODO", "placeholder", "임시", "나중에", "simplified",
+"basic version", "minimal implementation", "quick fix", "wired later", "skip for now",
+"future enhancement", "hardcoded for now"). Full list and exceptions:
+`devos/prompts/common/scope-reduction-prohibition.md`. Self-check at Step 4 of
+`decompose-prd.md` is mandatory — `grep` 결과 0건이어야 ticket 진입.
 
 ## Non-negotiables
 - 1 PR = 1 Ticket
@@ -183,8 +226,8 @@ Example:
   `**/*.test.*`, `**/*.spec.*`.
 
 ### 5. Test Authorship: Hybrid (Cross-test / Self-test)
-- **Logic tickets (`tdd: required`)**: cross-test. `test_owner: CODEX`, `impl_owner: CLAUDE2`.
-  CODEX commits failing tests first; CLAUDE2 commits implementation that passes them.
+- **Logic tickets (`tdd: required`)**: cross-test. `test_owner: CODEX`, `impl_owner: BUILDER`.
+  CODEX commits failing tests first; BUILDER (in-session sub-agent) commits implementation that passes them.
 - **UI tickets (`tdd: skip`)**: self-test. Builder writes their own tests after implementation.
 - **Infra/tooling tickets**: single-owner (CODEX for both test_owner and impl_owner).
 - **Review**: Claude 1 reviews all test commits for assertion specificity and
@@ -203,7 +246,7 @@ Example:
 - Claude 1 reviews the report next session and creates follow-up tickets for gaps.
 
 ### 7. Common Baseline Gates (All Tickets)
-`make pr-check` runs these independent of stack:
+`bin/os3 pr-check` runs these independent of stack:
 1. Secret scan (gitleaks)
 2. Contract sync check (contract doc ↔ code co-modification)
 3. Ticket scope guard (files outside ticket's `files:` list)

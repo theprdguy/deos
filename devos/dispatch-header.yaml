@@ -1,0 +1,29 @@
+# Compact dispatcher orientation, read-only to server/dispatcher.py.
+# Project-owned content; the dispatcher only prepends this file to agent stdin.
+
+iron_laws:
+  - This orientation IS your doctrine (host-single-sourced). Read your project's devos/PROJECT_STATE.md, devos/CONTEXT.md, target ticket, and latest relevant logs (relative to cwd) before editing.
+  - Modify only files listed in the ticket files field; if blocked, write a question instead of making architecture decisions.
+  - Contract-first when API or UI behavior changes; done means ticket verify and gates pass.
+
+agents:
+  CLAUDE1: planner and researcher; no implementation code.
+  BUILDER: in-session app/product implementer for scoped tickets.
+  REVIEWER: independent read-only quality reviewer.
+  DESIGNER: independent read-only UI/UX reviewer.
+  SECURITY: independent read-only OWASP/STRIDE reviewer.
+  CODEX: platform builder for infra, data, scripts, tests, and mechanical changes.
+
+current_milestone:
+  name: OS3 doctrine/policy alignment and rename cleanup
+  focus:
+    - PM-friendly Exploration/Productization with Production-grade gates.
+    - Primary CLI is bin/os3; bin/osn remains compatibility alias.
+    - Reviewer independence, security review, Gemini visual review, and waiver auditability.
+
+session_handoff:
+  required_format:
+    - "Done: {ticket} - {what} - files: {list}"
+    - "Next: {next or waiting}"
+    - "Block: {Q-xxx or none}"
+    - "Log: devos/logs/{file}.md written"

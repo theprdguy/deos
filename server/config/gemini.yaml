@@ -1,0 +1,22 @@
+# Gemini dispatcher configuration — T-OSN-W7-GEMINI-04
+#
+# daily_call_cap: Maximum Plan A Gemini CLI invocations per calendar day (UTC).
+#   Gemini free OAuth tier limit: 1,000 req/day.
+#   osn visual-review usage is low, so 50 is a conservative safety cap.
+#   Counter file: server/state/gemini_quota_{YYYY-MM-DD}.json
+#
+# quota_overflow_action: What to do when daily_call_cap is reached.
+#   "questions_queue" (default) — auto-register a Q-* item in devos/questions/QUEUE.md
+#       (informs user + advises waiting until next UTC day).
+#   "silent"                   — skip Q-* registration, no notification.
+#   "raise"                    — raise RuntimeError in the quota module (caller handles).
+#
+# fallback_on_quota_exceeded: Controls model fallback behaviour on quota exhaustion.
+#   true  (default) — quota-exhausted Plan A calls retry with fallback_model (gemini-2.5-pro)
+#       once, then route to Plan B handoff if the fallback also fails.
+#   false           — skip fallback model entirely; route directly to Plan B handoff on
+#       quota exhaustion (faster, no extra API call).
+
+daily_call_cap: 50
+quota_overflow_action: questions_queue
+fallback_on_quota_exceeded: true

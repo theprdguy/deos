@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OS3 Dashboard</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- Top bar -->
+  <div id="topbar">
+    <div id="project-tabs">
+      <!-- Project tabs rendered by app.js -->
+    </div>
+    <div id="topbar-actions">
+      <button id="refresh-btn" class="btn" title="Refresh board">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 8A6 6 0 1 1 8 2a6 6 0 0 1 4.243 1.757L14 2v4h-4l1.586-1.586"/>
+        </svg>
+        Refresh
+      </button>
+      <button id="auto-refresh-btn" class="btn" title="Toggle auto-refresh every 10s">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="8" cy="8" r="6"/>
+          <path d="M8 5v3l2 2"/>
+        </svg>
+        Auto
+        <span id="auto-refresh-countdown"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main content area -->
+  <div id="main-content">
+
+    <!-- Kanban board -->
+    <div id="board-area">
+      <div id="board">
+        <!-- Columns rendered by app.js -->
+      </div>
+    </div>
+
+    <!-- Ticket detail panel (hidden until a card is selected) -->
+    <div id="detail-panel" class="hidden">
+      <div class="detail-header">
+        <h2 id="detail-title">Ticket</h2>
+        <button id="detail-close" class="detail-close" title="Close detail panel">&#x2715;</button>
+      </div>
+      <div id="detail-body">
+        <!-- Detail content rendered by app.js -->
+      </div>
+    </div>
+
+  </div>
+</div>
+<script src="/static/app.js"></script>
+</body>
+</html>

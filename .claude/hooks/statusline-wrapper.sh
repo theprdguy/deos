@@ -1,5 +1,5 @@
 #!/bin/bash
-# os2 statusLine wrapper.
+# OS3 statusLine wrapper.
 # Reads statusLine input from stdin, then:
 #   1. Writes context bridge file (/tmp/claude-ctx-{session_id}.json) for
 #      context-monitor.js to consume.
@@ -34,11 +34,16 @@ if [ -z "$plugin_dir" ] || [ ! -f "${plugin_dir}src/index.ts" ]; then
   exit 0
 fi
 
-BUN_BIN="${BUN_BIN:-$HOME/.bun/bin/bun}"
-if [ ! -x "$BUN_BIN" ]; then
+BUN_BIN="${BUN_BIN:-}"
+if [ -z "$BUN_BIN" ]; then
   BUN_BIN="$(command -v bun 2>/dev/null || true)"
 fi
-if [ -z "$BUN_BIN" ]; then
+# Fallback: statusLine exec env may not have ~/.bun/bin on PATH (mirrors the
+# hardcoded path used by the global statusLine in ~/.claude/settings.json).
+if [ -z "$BUN_BIN" ] || [ ! -x "$BUN_BIN" ]; then
+  BUN_BIN="$HOME/.bun/bin/bun"
+fi
+if [ ! -x "$BUN_BIN" ]; then
   exit 0
 fi
 

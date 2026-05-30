@@ -1,51 +1,31 @@
-version: '3.2'
+version: '3.0'
 
-# ─── Ticket Template v3.2 (WHAT + CONTEXT + TDD) ───
-# Claude 1 writes WHAT and CONTEXT. Builders decide HOW.
+# ─── OS3 Ticket Queue (example / template) ───
+# CLAUDE1 (planner) writes WHAT + CONTEXT; the implementer (BUILDER or CODEX) decides HOW.
+# Only `status: todo` tickets are picked up by the dispatcher. Done tickets move to ARCHIVE.yaml.
+#
+# Ticket schema (see devos/AI.md § Ticket Standard and docs/policy/TICKET_SCHEMA.md):
 #
 # - id: T-XXX
-#   owner: CLAUDE2|CODEX
-#   status: todo
-#   priority: high|medium|low
-#   goal: "What to build — behavioral requirement"
-#   context: |
-#     Why it's needed + technical research from Claude 1
-#     (MCP/context7 findings, API changes, version constraints)
-#   constraints:
-#     - "Technical constraint"
-#   dod:
-#     - "Success: POST /x with valid input returns 200 + expected body"
-#     - "Error:   POST /x with invalid input returns 400 + error message"
-#   files:
-#     - "path/to/file"
-#   verify: "make pr-check"
-#   deps: []
-#   gates: []  # leave empty to use os2.yaml defaults
-#   tdd: required|skip|self-evident       # default: skip
-#   test_owner: CODEX|CLAUDE2|n/a          # default: owner
-#   impl_owner: CLAUDE2|CODEX              # default: owner
+#   status: todo            # todo | doing | code_ready | needs_pm | done | blocked | parked
+#   owner: BUILDER | CODEX  # BUILDER = in-session Claude sub-agent; CODEX = external subprocess
+#   impl_owner: BUILDER | CODEX
+#   test_owner: CODEX       # cross-test: CODEX commits failing tests first
+#   tdd: required | skip | self-evident
+#   mode: exploration | productization | production   # gate posture (docs/policy/MODE_GATE_MATRIX.md)
+#   security_audit: false   # auto-forced true for auth/payment/permissions/external input
+#   cross_model: false      # true → CODEX second-opinion (b') on the deliverable
+#   goal: |                 # behavioural requirement (WHAT)
+#   context: |              # why + research findings parked by CLAUDE1
+#   constraints: |          # technical constraints
+#   dod:                    # each item verifiable (input + expected output);
+#     - 'success: <input> → <expected output>'
+#     - 'error:   <bad input> → <expected error>'   # a failure-case DOD is mandatory
+#   files: [<paths the ticket may modify>]
+#   verify: |               # how to check completion (e.g. a test command)
+#   deps: []                # prerequisite ticket ids (must be done)
+#   gates: [pr-check]       # baseline gates run on completion
 # ───────────────────────────────────────────────────
 # See devos/AI.md "Testing Policy" for when tdd: required applies.
 
-tickets:
-- id: T-001
-  owner: CODEX
-  status: todo
-  priority: high
-  goal: setup.sh에서 잘못된 credentials 파일명 `.credentials.json`을 실제 파일명 `.claude.json`으로 수정한다.
-  context: |
-    CLAUDE_CONFIG_DIR=.claude-b claude login 실행 시 Claude Code CLI가 생성하는 파일은
-    `.claude-b/.claude.json`이다. 그러나 setup.sh는 `.credentials.json`을 기대하여 Claude 2
-    인증 확인이 항상 실패한다.
-    dispatcher.py와 .gitignore는 이미 수정 완료됨.
-    남은 수정 대상: scripts/setup.sh:95 파일 존재 체크 경로
-  constraints:
-  - 로직 변경 없이 파일명 문자열만 교체할 것
-  dod:
-  - scripts/setup.sh:95에서 ".credentials.json" → ".claude.json" 으로 변경됨
-  - grep -r "\.credentials\.json" scripts/ 결과가 0건
-  files:
-  - scripts/setup.sh
-  verify: grep -rn "\.credentials\.json" scripts/ && exit 1 || echo "PASS"
-  deps: []
-  plan_id: null
+tickets: []

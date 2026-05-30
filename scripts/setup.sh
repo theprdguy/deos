@@ -46,7 +46,7 @@ load_env_file() {
   fi
 }
 
-section "1/4 CLI tools"
+section "1/4 CLI 도구 확인"
 
 check_required() {
   local tool="$1"
@@ -97,7 +97,7 @@ check_gitleaks() {
 
 check_gitleaks
 
-section "2/4 Python dependencies"
+section "2/4 Python 의존성 설치"
 VENV_DIR="$ROOT_DIR/.venv"
 if [ ! -d "$VENV_DIR" ]; then
   python3 -m venv "$VENV_DIR"
@@ -108,16 +108,10 @@ fi
 "$VENV_DIR/bin/pip" install -r "$ROOT_DIR/requirements.txt" -q
 success "Installed Python dependencies"
 
-section "3/4 Environment variables"
+section "3/4 환경변수 설정"
 load_env_file
-success "Copy .env.example to .env and fill in required keys (if any)."
-
-section "4/4 Claude 2 authentication"
-if bash "$ROOT_DIR/scripts/preflight-claude2.sh" --advisory; then
-  :
-else
-  WARN_COUNT=$((WARN_COUNT + 1))
-fi
+success "Loaded local environment from .env when present"
+success "Optional integrations can be configured in .env or .env.local"
 
 printf "\n"
 if [ "$WARN_COUNT" -eq 0 ]; then

@@ -1,20 +1,27 @@
-# UI Contract — SSOT
+# UI Contract (SSOT)
+# Source of truth for all UI behavior.
+# Update BEFORE implementing. Commit contract changes before code changes.
 
-> Claude 2 or Codex must update this file BEFORE changing UI behavior.
+version: "1.0"
+last_updated: "(TBD)"
+updated_by: "claude1-planner"
 
-## Global UI States (mandatory)
-Every screen must handle:
-- loading
-- empty
-- error (with retry)
-- success
+## Screens / Components
 
-## Screens (placeholder)
-| Screen | Route | Primary action | Empty copy | Error copy |
-|---|---|---|---|---|
-| Home | / | (TBD) | "Nothing here yet." | "Something went wrong." |
+(TBD — define when project is set up)
 
-## Accessibility baseline
-- Buttons have accessible names
-- Errors are announced (aria-live)
-- Keyboard navigation supports primary flows
+## UI States (required for every component)
+- loading: Skeleton or spinner
+- empty: Empty state with CTA
+- error: Error message + retry
+- success: Data display
+
+## Design Tokens
+(TBD)
+
+## Accessibility Requirements
+(TBD)
+
+---
+*This file is the contract. If code diverges from this, the code is wrong.*
+*Gemini must update this file before changing UI behavior.*

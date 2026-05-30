@@ -4,11 +4,18 @@ set -euo pipefail
 
 printf '[5/5] tdd-first-commit\n'
 
-ROOT_DIR="$(pwd)"
+# Explicit root: positional arg $1 > env OS3_PROJECT_ROOT > cwd (backward-compat)
+if [ -n "${1:-}" ]; then
+  ROOT_DIR="$1"
+elif [ -n "${OS3_PROJECT_ROOT:-}" ]; then
+  ROOT_DIR="$OS3_PROJECT_ROOT"
+else
+  ROOT_DIR="$(pwd)"
+fi
 QUEUE_FILE="$ROOT_DIR/devos/tasks/QUEUE.yaml"
 TODAY="$(date '+%Y-%m-%d')"
 AGENT_NAME_VALUE="${AGENT_NAME:-}"
-export AGENT_NAME_VALUE TODAY
+export AGENT_NAME_VALUE TODAY ROOT_DIR
 
 if [ ! -f "$QUEUE_FILE" ]; then
   echo "⚠️ WARN tdd-first-commit: queue file missing"
@@ -24,9 +31,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-queue_path = Path("devos/tasks/QUEUE.yaml")
+root_dir = os.environ.get("ROOT_DIR", "")
+_root = Path(root_dir) if root_dir else Path(".")
+queue_path = _root / "devos/tasks/QUEUE.yaml"
 today = os.environ["TODAY"]
 agent_name = os.environ.get("AGENT_NAME_VALUE", "").strip().upper()
+git_opts = ["-C", root_dir] if root_dir else []
 
 ticket_start = re.compile(r"^- id:\s*(.+)$")
 field = re.compile(r"^  ([A-Za-z_]+):\s*(.*)$")
@@ -59,9 +69,24 @@ if not doing_tickets:
     print("✅ PASS tdd-first-commit: no active ticket")
     raise SystemExit(0)
 
+def changed_files(commit_sha: str) -> list[str]:
+    proc = subprocess.run(
+        ["git"] + git_opts + ["diff-tree", "--root", "--no-commit-id", "--name-only", "-r", commit_sha],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return [line.strip() for line in proc.stdout.splitlines() if line.strip()]
+
+def is_devos_only_commit(commit_sha: str) -> bool:
+    files = changed_files(commit_sha)
+    if not files:
+        return False
+    return all(path == "devos" or path.startswith("devos/") for path in files)
+
 def first_commit_for_ticket(ticket_id: str) -> str:
     proc = subprocess.run(
-        ["git", "log", "--reverse", "--grep", ticket_id, "--format=%H"],
+        ["git"] + git_opts + ["log", "--reverse", "--grep", ticket_id, "--format=%H"],
         capture_output=True,
         text=True,
         check=False,
@@ -69,17 +94,10 @@ def first_commit_for_ticket(ticket_id: str) -> str:
     for line in proc.stdout.splitlines():
         line = line.strip()
         if line:
+            if is_devos_only_commit(line):
+                continue
             return line
     return ""
-
-def changed_files(commit_sha: str) -> list[str]:
-    proc = subprocess.run(
-        ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", commit_sha],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return [line.strip() for line in proc.stdout.splitlines() if line.strip()]
 
 def is_test_file(path: str) -> bool:
     p = Path(path)
@@ -95,7 +113,7 @@ def is_test_file(path: str) -> bool:
 
 def append_waiver(ticket_id: str, owner: str) -> None:
     agent_slug = owner.strip().lower() or "unknown"
-    log_path = Path("devos/logs") / f"{today}-{agent_slug}.md"
+    log_path = _root / "devos/logs" / f"{today}-{agent_slug}.md"
     line = f"self-evident TDD waiver for {ticket_id}"
     existing = log_path.read_text() if log_path.exists() else ""
     if line not in existing:

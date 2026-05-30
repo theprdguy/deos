@@ -2,11 +2,20 @@
 
 set -euo pipefail
 
-printf '[4/4] session-log\n'
+printf '[4/5] session-log\n'
 
-ROOT_DIR="$(pwd)"
+# Explicit root: positional arg $1 > env OS3_PROJECT_ROOT > cwd (backward-compat)
+if [ -n "${1:-}" ]; then
+  ROOT_DIR="$1"
+elif [ -n "${OS3_PROJECT_ROOT:-}" ]; then
+  ROOT_DIR="$OS3_PROJECT_ROOT"
+else
+  ROOT_DIR="$(pwd)"
+fi
 QUEUE_FILE="$ROOT_DIR/devos/tasks/QUEUE.yaml"
 TODAY="$(date '+%Y-%m-%d')"
+
+export ROOT_DIR
 
 agent_info="$(
 python3 - <<'PY'
@@ -15,8 +24,11 @@ import os
 import re
 import subprocess
 
-queue_path = Path("devos/tasks/QUEUE.yaml")
+root_dir = os.environ.get("ROOT_DIR", "")
+_root = Path(root_dir) if root_dir else Path(".")
+queue_path = _root / "devos/tasks/QUEUE.yaml"
 agent_env = os.environ.get("AGENT_NAME", "").strip().lower()
+git_opts = ["-C", root_dir] if root_dir else []
 
 
 def emit(source: str, agent: str) -> None:
@@ -50,7 +62,7 @@ def parse_queue() -> list[dict]:
 
 def infer_from_git_email() -> str:
     result = subprocess.run(
-        ["git", "config", "user.email"],
+        ["git"] + git_opts + ["config", "user.email"],
         capture_output=True,
         text=True,
         check=False,
@@ -77,10 +89,8 @@ if not queue_path.exists():
     git_agent = infer_from_git_email()
     if git_agent:
         emit("fallback", git_agent)
-    if Path(".claude/.claude.json").exists():
+    if (_root / ".claude/.claude.json").exists():
         emit("fallback", "claude1")
-    if Path(".claude-b/.claude.json").exists():
-        emit("fallback", "claude2")
     emit("fallback", "codex")
 
 tickets = parse_queue()
@@ -94,10 +104,8 @@ if doing:
 git_agent = infer_from_git_email()
 if git_agent:
     emit("fallback", git_agent)
-if Path(".claude/.claude.json").exists():
+if (_root / ".claude/.claude.json").exists():
     emit("fallback", "claude1")
-if Path(".claude-b/.claude.json").exists():
-    emit("fallback", "claude2")
 emit("fallback", "codex")
 PY
 )"
@@ -112,7 +120,7 @@ if [ "$agent_source" = "$agent_info" ]; then
 fi
 
 if [ -z "$agent_name" ]; then
-  echo "⚠️ WARN session-log: unable to determine agent name. Set AGENT_NAME env or mark ticket as doing. Example: AGENT_NAME=CLAUDE1 make pr-check"
+  echo "⚠️ WARN session-log: unable to determine agent name. Set AGENT_NAME env or mark ticket as doing. Example: AGENT_NAME=CLAUDE1 bin/os3 pr-check"
   exit 0
 fi
 
@@ -121,10 +129,21 @@ if [ "$agent_source" = "fallback" ]; then
 fi
 
 log_file="$ROOT_DIR/devos/logs/${TODAY}-${agent_name}.md"
+matched_log_file="$log_file"
+
+if [ ! -f "$matched_log_file" ] && [ "$agent_name" = "codex" ]; then
+  shopt -s nullglob
+  codex_ticket_logs=("$ROOT_DIR/devos/logs/${TODAY}-codex-"*.md)
+  shopt -u nullglob
+  if [ "${#codex_ticket_logs[@]}" -gt 0 ]; then
+    matched_log_file="${codex_ticket_logs[0]}"
+  fi
+fi
+
 agent_name_upper="$(printf '%s' "$agent_name" | tr '[:lower:]' '[:upper:]')"
-if [ -f "$log_file" ]; then
+if [ -f "$matched_log_file" ]; then
   echo "✅ PASS session-log${fallback_tag}"
 else
   echo "⚠️ WARN session-log${fallback_tag}: session log missing ($log_file)"
-  echo "Set AGENT_NAME env or mark ticket as doing. Example: AGENT_NAME=${agent_name_upper} make pr-check"
+  echo "Set AGENT_NAME env or mark ticket as doing. Example: AGENT_NAME=${agent_name_upper} bin/os3 pr-check"
 fi

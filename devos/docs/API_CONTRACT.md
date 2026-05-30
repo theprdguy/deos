@@ -1,34 +1,24 @@
-# API Contract (REST) — SSOT
+# API Contract (SSOT)
+# Source of truth for all API behavior.
+# Update BEFORE implementing. Commit contract changes before code changes.
 
-> Update this file first when API behavior changes.
+version: "1.0"
+last_updated: "(TBD)"
+updated_by: "claude1-planner"
 
-## Conventions
-- Base URL: /api
-- Content-Type: application/json; charset=utf-8
-- IDs: string (uuid recommended)
-- Date/time: ISO-8601 string
+## Endpoints
 
-## Error Format (mandatory)
-```json
-{
-  "error": {
-    "code": "STRING_CODE",
-    "message": "Human readable message",
-    "details": { "optional": "object" }
-  }
-}
-```
+(TBD — define when project is set up)
 
-## Auth (Default until decided)
-- Mode: none
+## Authentication
+(TBD)
 
-## Endpoints (placeholder)
-| Name | Method | Path | Request | Response | Notes |
-|---|---|---|---|---|---|
-| Health | GET | /api/health | - | `{ "ok": true }` | baseline |
+## Error Format
+(TBD)
 
-## Schemas (placeholder)
-### Item
-```json
-{ "id": "string", "title": "string", "createdAt": "2026-01-01T00:00:00Z" }
-```
+## Versioning
+(TBD)
+
+---
+*This file is the contract. If code diverges from this, the code is wrong.*
+*Claude 2 and Codex must update this file before changing API behavior.*
