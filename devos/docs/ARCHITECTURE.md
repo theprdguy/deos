@@ -1,8 +1,8 @@
-# Architecture (Vibe Coding OS v3.4)
+# Architecture (OS3 v0.1)
 
 ## System Overview
 
-os2 is a 3-agent Agentic Coding OS that orchestrates AI agents from a single laptop.
+OS3 is a product-building operating system that turns PM product intent into scoped, tested, reviewed, secure, and auditable software work with bounded LLM collaborators.
 
 ```
 ┌─────────────────────────────────────────┐
@@ -13,7 +13,7 @@ os2 is a 3-agent Agentic Coding OS that orchestrates AI agents from a single lap
            │                  │
 ┌──────────▼──────┐  ┌───────▼───────────────┐
 │ Local Mode       │  │ Remote Mode            │
-│ Claude Code CLI  │  │ os2-server.py          │
+│ Claude Code CLI  │  │ server/                │
 │ (interactive)    │  │ • Telegram bot         │
 │ Account A        │  │ • claude -p pipe mode  │
 │                  │  │ • Status queries       │
@@ -22,9 +22,9 @@ os2 is a 3-agent Agentic Coding OS that orchestrates AI agents from a single lap
                      │ Dispatch
          ┌───────────┴───────────┐
          ▼                       ▼
-    Claude 2                   Codex
-    (Account B)              (Platform)
-    App (Backend + GUI)      subprocess
+    Builder sub-agent          Codex
+    (in-session)              (platform)
+    App / UI work             subprocess
 ```
 
 ## Component Descriptions
@@ -38,7 +38,6 @@ All SSOT state lives here. Stack-agnostic. Never in the app code.
 | `PROJECT_STATE.md` | Current milestone, agent status, blockers |
 | `CONTEXT.md` | TL;DR updated each session |
 | `TASKS.md` | Human-readable task board |
-| `agents/registry.yaml` | 3-agent registry with scopes |
 | `tasks/QUEUE.yaml` | Machine-readable ticket queue |
 | `plans/pending/` | Plans awaiting approval |
 | `plans/approved/` | Approved plans (archive) |
@@ -47,25 +46,26 @@ All SSOT state lives here. Stack-agnostic. Never in the app code.
 | `questions/QUEUE.md` | Async question queue |
 | `docs/` | API/UI contracts, ADRs, architecture |
 
-### os2-server (The Nervous System)
+### OS3 server (The Nervous System)
 Always-running Python process. Handles TG + dispatch.
 
 | Module | Purpose |
 |--------|---------|
 | `telegram.py` | TG bot handlers |
 | `planner.py` | `claude -p` pipe mode wrapper |
-| `dispatcher.py` | 3-agent dispatch (replaces Linker) |
+| `dispatcher.py` | owner routing, policy gates, state transitions |
 | `ssot.py` | SSOT file readers/writers |
 | `approval.py` | Approval workflow state machine |
-| `config.py` | Load os2.yaml |
+| `config.py` | Load `osn.yaml` compatibility config |
 
 ### Agents
 
 | Agent | Mode | Config | Scope |
 |-------|------|--------|-------|
-| Claude 1 | interactive + pipe | .claude/ | devos/ |
-| Claude 2 | subprocess (claude -p) | .claude-b/ | apps/api/src/**, apps/web/** (shared, design-heavy) |
-| Codex | subprocess | AGENTS.md | apps/web/** (shared, mechanical), apps/api/**, packages/**, infra/**, scripts/**, tests/**, styles/** |
+| CLAUDE1 main | interactive | .claude/CLAUDE.md | devos/, .claude/, AGENTS.md, osn.yaml, server/ (bootstrap 한시) |
+| builder (sub) | in-session via Agent tool | .claude/agents/builder.md (sonnet) | apps/api/src/**, apps/web/**, packages/shared/** |
+| reviewer / designer / security (sub) | in-session, READ-ONLY | .claude/agents/{name}.md | (no write — review only) |
+| Codex | external CLI subprocess | AGENTS.md | apps/web/** (shared, mechanical), apps/api/**, packages/**, infra/**, scripts/**, tests/**, styles/** |
 
 ## Key Design Decisions
 
@@ -75,23 +75,23 @@ No shared memory, no RPC. The repo IS the communication channel.
 
 ### Dual-mode Claude 1
 Local: interactive Claude Code CLI (primary path)
-Remote: os2-server invokes `claude -p` for each TG request
+Remote: OS3 server invokes `claude -p` for each TG request
 Both modes share the same devos/ state.
 
 ### Approval Workflow
 PRD → plan → user approval → dispatch. No auto-execution.
 Plans saved to plans/pending/, moved to approved/ or rejected/.
 
-### Pipe Mode for Builders
-Claude 2 runs as `claude -p` (non-interactive, one-shot).
-Fresh context window each invocation = no degradation.
-Account B credentials via `CLAUDE_CONFIG_DIR=.claude-b`.
+### In-session sub-agent (OS3 v0.1)
+builder/reviewer/designer/security 는 CLAUDE1 main 안에서 `Agent(subagent_type=...)` 로 spawn.
+own context window — main conversation history 미상속. fresh context per invocation = no degradation.
+~~Account B credentials via `CLAUDE_CONFIG_DIR=.claude-b`~~ — sunset 2026-05-13 (W6 완료).
 
 ### Shared Scope (apps/web/**)
-Both Claude 2 and Codex can modify `apps/web/**`.
+Both builder sub-agent and CODEX can modify `apps/web/**`.
 Ticket `files:` field enforces exclusive ownership per task.
-Claude 2: design judgment, component architecture, UX flow.
-Codex: bulk renames, pattern replacements, large mechanical edits.
+builder: design judgment, component architecture, UX flow.
+CODEX: bulk renames, pattern replacements, large mechanical edits.
 
 ### Token Efficiency
 - Most TG queries answered by file parsing (no LLM call)
@@ -103,7 +103,7 @@ Codex: bulk renames, pattern replacements, large mechanical edits.
 Target maturity: **Phase 3.5** (contract tests + UI smoke + scenario integration).
 Full policy in `devos/AI.md` "Testing Policy" section.
 
-### Gate Flow (`make pr-check`)
+### Gate Flow (`bin/os3 pr-check`)
 
 ```
 commit / PR
@@ -141,8 +141,8 @@ commit / PR
 
 | Ticket type | `tdd` | `test_owner` | `impl_owner` | Flow |
 |-------------|-------|--------------|--------------|------|
-| Logic (`apps/api/**`, `packages/shared/**`) | `required` | CODEX | CLAUDE2 | Cross-test: CODEX commits failing tests → CLAUDE2 implements |
-| UI (`apps/web/**`) | `skip` | CLAUDE2 | CLAUDE2 | Self-test: CLAUDE2 writes both |
+| Logic (`apps/api/**`, `packages/shared/**`) | `required` | CODEX | builder | Cross-test: CODEX commits failing tests → builder implements |
+| UI (`apps/web/**`) | `skip` | builder | builder | Builder self-tests UI unless the ticket explicitly assigns CODEX as test owner |
 | Infra / tooling | `required` | CODEX | CODEX | Single-owner: CODEX writes test scenarios + impl |
 | Docs / policy | `skip` | n/a | CLAUDE1 | Interactive: Claude 1 executes directly (not via subprocess dispatcher) |
 

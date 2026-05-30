@@ -1,160 +1,134 @@
-# Operation Guide (Vibe Coding OS v3.4)
+# OS3 Operation Guide
 
-## System Structure
+## System Shape
 
-```
-[Main machine] ─── Work hub
-  Claude 1 CLI (interactive)
-  os2-server (run as needed)
-  Claude 2 / Codex execution
-        │
-        │ git push/pull (GitHub private repo)
-        │
-[Sub machine] ─── Always-on server
-  os2-server (launchd, always running)
-  Telegram Bot (remote control)
+OS3 runs as a file-based product-building operating system:
+
+```text
+PM / Claude 1 main
+  -> plan, clarify, decompose, route
+  -> Builder sub-agent for scoped product/app implementation
+  -> Codex subprocess for platform, tests, infra, backend/data, and hardening
+  -> Reviewer/Security/Designer read-only review chain
+  -> Gemini visual reviewer for material UI outcomes
 ```
 
----
+`bin/os3` is the primary CLI. `bin/osn` remains a compatibility alias for older
+automation. `osn.yaml` remains the compatibility config filename.
 
-## Two-machine Handoff
+## Daily Flow
 
-### Main → Sub (leaving your desk)
+### Start
+
 ```bash
-make handoff
-# Internally: make stop → git commit → git push
-# Sub machine Telegram bot continues to accept commands
+git pull
+bin/os3 status
+claude
 ```
 
-### Sub → Main (returning)
+Claude 1 should read the session-start SSOT files once, then work from the
+current ticket/plan context.
+
+### End
+
 ```bash
-make pickup
-# Internally: git pull → make start
-# Claude 1 CLI: claude
+bin/os3 archive
+git status --short
+git push
 ```
 
-The sub machine requires no manual intervention — launchd keeps the server running.
+Archive only moves `done` tickets out of QUEUE. Historical ticket IDs are kept.
 
----
+## PRD To Implementation
 
-## PRD → Implementation Workflow
+1. PM describes desired product outcome.
+2. Claude 1 clarifies product intent and decomposes into tickets.
+3. Plan is saved to `devos/plans/pending/` and waits for approval.
+4. Approval dispatches scoped tickets by owner:
+   - BUILDER: in-session app/product implementation.
+   - CODEX: subprocess for platform, tests, infra, backend/data, and hardening.
+   - CLAUDE1: policy/SSOT work only.
+5. Gates run through `bin/os3 pr-check` and ticket-specific `verify`.
+6. Reviewer is independent and read-only.
+7. Security runs for risk-bearing work.
+8. Gemini visual review runs for Production UI or material visual output.
+9. PM decides only product judgment, visual taste, final acceptance, or waiver.
 
-```
-1. Submit PRD
-   - Local: directly in Claude 1 CLI
+## Agent Responsibilities
 
-2. Claude 1 decomposes
-   - Breaks into tickets → saves to devos/plans/pending/
+| Agent | Responsibility |
+| --- | --- |
+| Claude 1 main | Product clarification, planning, ticket writing, routing, orchestration, SSOT updates |
+| Builder | Scoped implementation where product feel or app UX matters |
+| Codex | Tests, infra, backend/API/data/shared packages, policy enforcement, mechanical changes, objective UI fixes |
+| Reviewer | Independent quality review; no writes |
+| Security | OWASP/STRIDE risk review; no writes |
+| Designer | UI/UX review and PRD intake design critique; no writes |
+| Gemini | Rendered visual outcome review |
 
-3. Approve
-   - Local: review plan then run make approve
-   - Remote: Telegram /approve
+## SSOT Priority
 
-4. Auto-dispatch
-   - CLAUDE2: app work — backend + GUI design/impl (fallback: CODEX)
-   - CODEX: platform work — infra + data + tests + mechanical changes
-
-5. Completion notification
-   - Receive done/error notification
-   - Session log recorded in devos/logs/
-
-6. PR review
-   - Claude 1 reviews → approves or requests changes
-```
-
----
-
-## Per-agent Operations
-
-### Claude 1 (Account A, Planner)
-- Local: run `claude` → `.claude/CLAUDE.md` auto-loads
-- Remote: os2-server calls `claude -p`
-- No-impl guard: `.claude/hooks/guard-no-impl.sh`
-
-### Claude 2 (Account B, App Builder)
-- os2-server runs `CLAUDE_CONFIG_DIR=.claude-b claude -p`
-- Handles backend logic + GUI design/implementation
-- Shares `apps/web/**` scope with CODEX — ticket `files:` defines exclusive assignment
-- Strength: design judgment, component architecture, UX flow
-- Fallback to CODEX if `.claude-b` credentials are not configured
-
-### Codex (Platform Builder)
-- os2-server runs `codex exec -s workspace-write`
-- Highest token budget → assign complex/large tickets here
-- Strength: large file precision edits, bulk renames, pattern replacements
-
----
-
-## SSOT Management Principles
-
-```
-Truth priority:
-1. devos/PROJECT_STATE.md
-2. devos/docs/API_CONTRACT.md + UI_CONTRACT.md
-3. devos/docs/ADR/
-4. devos/tasks/QUEUE.yaml
+1. `devos/PROJECT_STATE.md`
+2. Contract docs under `devos/docs/`
+3. ADRs under `devos/docs/ADR/`
+4. `devos/tasks/QUEUE.yaml`
 5. Code
-6. devos/logs/ (session logs)
-7. Chat (lowest)
-```
-
-- QUEUE.yaml writes: only by os2-server after approval
-- PROJECT_STATE.md writes: only Claude 1
-- Contract changes: commit before code changes
-
----
+6. Session logs under `devos/logs/`
+7. Chat history
 
 ## Ticket Lifecycle
 
+Valid statuses:
+
+```text
+todo -> doing -> code_ready -> done
+              -> needs_pm
+              -> blocked
+              -> parked
 ```
-todo → doing → done
-           └→ blocked (on error)
+
+- `todo`: dispatchable.
+- `doing`: implementation in progress.
+- `code_ready`: implementation finished, gates/reviews/PM decisions may remain.
+- `needs_pm`: PM product judgment, visual taste, acceptance, or waiver needed.
+- `done`: required gates, reviews, PM decisions, waivers, and records are closed.
+- `blocked`: cannot proceed without fix or decision.
+- `parked`: intentionally out of active flow.
+
+Do not use `ready`, `pending`, or `queued` as ticket statuses.
+
+## Common Commands
+
+```bash
+bin/os3 status
+bin/os3 queue
+bin/os3 pending
+bin/os3 approve
+bin/os3 reject "reason"
+bin/os3 dispatch T-XXX
+bin/os3 dispatch-codex T-XXX
+bin/os3 dispatch-all
+bin/os3 verify T-XXX
+T=T-XXX AGENT_NAME=CODEX bin/os3 pr-check
+bin/os3 user-review T-XXX
+bin/os3 archive
 ```
 
-| Status | Meaning | Set by |
-|--------|---------|--------|
-| `todo` | Awaiting dispatch (new tickets must use this) | Claude 1 (Planner) |
-| `doing` | Agent working | Dispatcher (auto) |
-| `done` | Complete + all gates passed | Dispatcher (auto) |
-| `blocked` | Failed or gate error | Dispatcher (auto) |
-| `parked` | Manually paused | Manual |
+## Launchd Server
 
-> **Note:** `ready`, `pending`, `queued` and other values are not recognized by the dispatcher and will be silently skipped.
+Use `com.os3.server.plist` if a background server is needed. Update its
+`WorkingDirectory` to the local OS3 path first.
 
-- `make queue` to check current status
-- For blocked tickets: check `devos/logs/` for error details
-- Retry: `make dispatch T=T-XXX`
-
----
+```bash
+cp com.os3.server.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.os3.server.plist
+launchctl kickstart -k gui/$(id -u)/com.os3.server
+```
 
 ## Troubleshooting
 
-### Server not responding
-```bash
-make ps       # check status
-make tail     # check logs
-make restart  # restart
-```
-
-### Agent crashed
-```bash
-make logs           # check session logs
-make queue          # check blocked tickets
-make dispatch T=T-XXX  # retry
-```
-
-### Git conflicts
-```bash
-# If both machines edited simultaneously
-git pull --rebase
-# For devos/ files, Claude 1 rewrites from the latest truth
-```
-
-### Claude 2 not dispatching
-```bash
-# Check if Account B credentials exist
-ls .claude-b/.credentials.json
-# If not found, log in:
-CLAUDE_CONFIG_DIR=.claude-b claude login
-# Codex will handle CLAUDE2 tickets as fallback in the meantime
-```
+- Queue or status looks stale: run `bin/os3 status` and inspect `devos/PROJECT_STATE.md`.
+- A ticket is blocked: inspect the latest relevant `devos/logs/` entry.
+- A UI result needs product judgment: use `bin/os3 user-review T-XXX` after PM review.
+- Gemini API path fails: use `bin/os3 gemini pending` then `bin/os3 gemini next`.
+- Historical `T-OS2-*` or `T-OSN-*` IDs are expected; do not rename them without a dedicated migration ticket.

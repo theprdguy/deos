@@ -1,0 +1,89 @@
+# osn.yaml — Sub-agent Orchestration OS v0.1 Configuration
+# Server + Dispatcher configuration
+
+project_root: "."
+devos_dir: "devos"
+queue_file: "devos/tasks/QUEUE.yaml"
+plans_dir: "devos/plans"
+logs_dir: "devos/logs"
+
+# Agent Dispatch Configuration
+agents:
+  CLAUDE1:
+    mode: pipe               # claude -p (planning + research tasks)
+    # 2026-06-15 Agent SDK 정책: `claude -p` 가 별도 C2 크레딧 풀로 분리 (Max 5x = $100/월).
+    # agent_review gate / retry fallback 의 PASS/FAIL 정형 평가는 Haiku 4.5 충분
+    # (90% sonnet-equivalent agentic eval). Opus 대비 ~15x 단가 절감.
+    command: ["claude", "-p", "--model", "haiku"]
+    config_dir: ".claude"    # Account A
+    timeout: 300
+    notes: "Used by osn-server for planning and agent-review gates. --model haiku enforced (C2 크레딧 보호)."
+
+  CODEX:
+    mode: subprocess
+    # host-OS migration 결정 #5: --add-dir ".." 제거 → cwd(project_root)로 write 스코프 한정.
+    # 형제 프로젝트/호스트 write 차단. doctrine 은 dispatcher orientation 으로 host-single-sourced(β).
+    command: ["codex", "exec", "-s", "workspace-write"]
+    timeout: 900
+    notes: "Platform builder (infra + data + tests + mechanical). Scoped to project_root (cwd); doctrine via orientation."
+
+
+# Dispatch settings
+dispatch:
+  max_concurrent: 2          # Max agents running simultaneously
+  auto_chain: false          # POLICY: single dispatch = single ticket only (no backlog cascade).
+                             # dispatch_all_todo() handles explicit batch dispatch as a separate operation.
+                             # auto_chain=true is PROHIBITED in production — 2026-05-28 incident showed
+                             # it caused 9 todo tickets to cascade to done without review (RC#3).
+                             # C1 invariant (_validate_impl_ticket_agent_review_gate + _review_verdict)
+                             # structurally blocks unreviewed done transitions even if this is re-enabled,
+                             # but auto_chain=false is the hardened default enforced by
+                             # tests/test_dispatch_autochain_guard.py (TestOsnYamlAutoChainPolicy).
+  scope_check: true          # Verify no file scope overlap before parallel dispatch
+  approval_required: true    # Always require approval before dispatch
+  orientation_files:
+    - path: "devos/dispatch-header.yaml"
+  orientation_max_bytes: 8192
+  post_fail_hooks:
+    - pattern: "ENOTFOUND registry\\.npmjs\\.org"
+      action: "cd <project-root> && npm install"
+      retry: true
+
+# Gate pipeline — verification after agent completion
+gates:
+  defaults:
+    - name: "tests"
+      run: "python3 -m pytest tests/ -q"
+      timeout: 900
+    - name: "secrets"
+      run: "gitleaks git --no-banner --redact ."
+    - name: "scan-secrets"          # alias used by ticket schema
+      run: "gitleaks git --no-banner --redact ."
+    - name: "pr-check"               # baseline gate runner (host-absolute: gates run in project cwd)
+      run: "$HOME/dev-os/bin/osn pr-check"
+    - name: "review"
+      type: "agent-review"
+  by_tag:
+    auth:
+      - name: "security"
+        run: "bash $HOME/dev-os/scripts/check-contract-sync.sh && bash $HOME/dev-os/scripts/check-ticket-scope.sh && bash $HOME/dev-os/scripts/check-session-log.sh"
+  agent_review:
+    max_diff_lines: 500
+    timeout: 120
+  auto_retry:
+    enabled: true
+    max_retries: 1          # Backward-compatible default when ticket.priority is missing
+    retry_policy:
+      critical: 3
+      high: 2
+      medium: 1
+      low: 1
+
+# Notification settings
+notifications:
+  sound: true                # macOS sound on completion
+
+# Server settings
+server:
+  log_file: ".osn-server.log"
+  log_level: "INFO"

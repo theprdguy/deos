@@ -60,9 +60,16 @@ if [ "${1:-}" = "--self-test-scope-reduction" ]; then
   exit $?
 fi
 
-printf '[3/4] ticket-scope\n'
+printf '[3/5] ticket-scope\n'
 
-ROOT_DIR="$(pwd)"
+# Explicit root: positional arg $1 > env OS3_PROJECT_ROOT > cwd (backward-compat)
+if [ -n "${1:-}" ]; then
+  ROOT_DIR="$1"
+elif [ -n "${OS3_PROJECT_ROOT:-}" ]; then
+  ROOT_DIR="$OS3_PROJECT_ROOT"
+else
+  ROOT_DIR="$(pwd)"
+fi
 QUEUE_FILE="$ROOT_DIR/devos/tasks/QUEUE.yaml"
 
 if [ ! -f "$QUEUE_FILE" ]; then
@@ -71,7 +78,7 @@ if [ ! -f "$QUEUE_FILE" ]; then
 fi
 
 AGENT_NAME_VALUE="${AGENT_NAME:-}"
-export AGENT_NAME_VALUE
+export AGENT_NAME_VALUE ROOT_DIR
 
 out_of_scope="$(
 python3 - <<'PY'
@@ -81,7 +88,11 @@ import subprocess
 import sys
 import re
 
-queue_path = Path("devos/tasks/QUEUE.yaml")
+root_dir = os.environ.get("ROOT_DIR", "")
+if root_dir:
+    queue_path = Path(root_dir) / "devos/tasks/QUEUE.yaml"
+else:
+    queue_path = Path("devos/tasks/QUEUE.yaml")
 agent_name = os.environ.get("AGENT_NAME_VALUE", "").strip().upper()
 
 
@@ -89,17 +100,18 @@ def collect_changed_files() -> list[str]:
     changed: list[str] = []
     seen: set[str] = set()
     commands = []
+    git_opts = ["-C", root_dir] if root_dir else []
     head_ok = subprocess.run(
-        ["git", "rev-parse", "--verify", "HEAD"],
+        ["git"] + git_opts + ["rev-parse", "--verify", "HEAD"],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         check=False,
     ).returncode == 0
     if head_ok:
-        commands.append(["git", "diff", "--name-only", "HEAD", "--"])
+        commands.append(["git"] + git_opts + ["diff", "--name-only", "HEAD", "--"])
     else:
-        commands.append(["git", "diff", "--name-only", "--cached", "--"])
-    commands.append(["git", "ls-files", "--others", "--exclude-standard"])
+        commands.append(["git"] + git_opts + ["diff", "--name-only", "--cached", "--"])
+    commands.append(["git"] + git_opts + ["ls-files", "--others", "--exclude-standard"])
     for cmd in commands:
         proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
         for line in proc.stdout.splitlines():

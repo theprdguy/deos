@@ -9,6 +9,7 @@ Read each of these ONCE at session start. Do NOT re-read on every turn; hold a m
 - `devos/CONTEXT.md`
 - `devos/tasks/QUEUE.yaml` — full file, build a ticket-id→status/owner index in your head
 - `devos/questions/QUEUE.md`
+- `devos/os-feedback/INBOX.md` — OS-friction backlog (demand-pulled OS improvement; triage per Step 2.5)
 - `devos/docs/API_CONTRACT.md`
 - `devos/docs/UI_CONTRACT.md`
 - Latest 1–2 files in `devos/logs/` (cross-agent context)
@@ -21,6 +22,12 @@ Efficiency rule: if you catch yourself Reading the same file with a different `o
 - Present as compact choices: `Q-xxx: A/B/C (Rec: X, Default: Y)`
 - Non-blocking + doesn't affect today's tickets → assume Default, don't ask
 - Max 5 per triage
+
+## Step 2.5: Review OS-feedback INBOX (demand-pulled OS improvement)
+- Read `devos/os-feedback/INBOX.md`. This is where OS-level friction hit during *any* project session is captured (via `os3 feedback "..."` or direct append). It is the load-bearing pipe of the "improve the OS from product friction" operating model — if it is empty while product work is happening, the pipe is cold (friction is evaporating into chat); say so.
+- Count `[status: open]` entries. Surface 1–2 high-severity items relevant to today; do NOT triage the whole backlog every session.
+- **Consolidation trigger**: when open entries ≥ 8 **OR** at the start of a new quarter (whichever first), propose a consolidation pass — convert ripe INBOX items into tickets/plan AND sweep the standing drift list (draft-policy graduation, naming sediment, empty ADR/measurement). This is the *only* scheduled OS-maintenance ritual; reactive friction-fixing does not catch latent debt on its own.
+- This step is cheap by design (one read + a glance). It is not the heavyweight measurement machinery — its consumer is every session.
 
 ## Step 3: Session plan — use TaskCreate
 If this session will touch 3+ discrete steps (PRD decomposition, multi-ticket review, policy batch), call `TaskCreate` once per step. This is mandatory, not optional:
@@ -46,8 +53,8 @@ Skip TaskCreate only for trivial single-step sessions (one ticket review, one tr
 - [ticket IDs + owners]
 
 ── Next Actions ──
-- CLAUDE2: [what, which tickets] → make dispatch T=T-XXX
-- CODEX:   [what, which tickets] → make dispatch T=T-XXX
+- BUILDER: [what, which tickets] → bin/os3 dispatch T-XXX
+- CODEX:   [what, which tickets] → bin/os3 dispatch T-XXX
 ```
 
 ## CRITICAL REMINDERS

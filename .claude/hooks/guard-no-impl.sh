@@ -20,10 +20,9 @@ done
 
 INPUT=$(cat)
 
-# Claude 2 has its own scope guard (.claude-b/hooks/guard-scope.sh) — skip this guard
-if [ "$CLAUDE_CONFIG_DIR" = ".claude-b" ]; then
-  exit 0
-fi
+# osn v0.1: .claude-b/ removed (W6 sunset). Account B branch retired.
+# Sub-agents (builder/reviewer/designer/security) run in-session — their own scope is enforced by
+# subagent_type Tools whitelist, not by this hook.
 
 FILE_PATH=$(echo "$INPUT" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('file_path',''))" 2>/dev/null)
 
@@ -56,7 +55,7 @@ for pattern in "${IMPL_PATTERNS[@]}"; do
       echo "⚠ PLANNER ADVISORY: writing to an implementation path." >&2
       echo "   File: $FILE_PATH" >&2
       echo "   This edit is allowed because --advisory is set, but it crosses CLAUDE1's role boundary." >&2
-      echo "   Consider: ticket in devos/tasks/QUEUE.yaml owned by CLAUDE2/CODEX." >&2
+      echo "   Consider: ticket in devos/tasks/QUEUE.yaml owned by BUILDER or CODEX." >&2
       echo "" >&2
       exit 0
     fi
@@ -66,7 +65,7 @@ for pattern in "${IMPL_PATTERNS[@]}"; do
     echo ""
     echo "   As Planner (Claude 1), you must NOT write implementation code."
     echo "   Instead: Create a ticket in devos/tasks/QUEUE.yaml"
-    echo "   Owner: CLAUDE2 (backend), CODEX (infra/data), or GEMINI (UI)"
+    echo "   Owner: BUILDER for ambiguous/product-facing UI, CODEX for infra/tests/backend/data/shared/policy work."
     echo ""
     echo "   Override: If this is a config/setup file, the user can approve."
     echo "   Advisory: pass --advisory to log violations without blocking."

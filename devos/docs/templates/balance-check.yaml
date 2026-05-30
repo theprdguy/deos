@@ -1,0 +1,54 @@
+# 4축 점수 카드 — Phase ship 직후 의무 기록
+# 파일명: devos/docs/retrospective/{date}-balance-check-phase-{X}.md
+# (이 yaml block 을 .md 안에 embed 하거나 별도 yaml 로 보존)
+
+balance_check:
+  phase: 0a | 0 | 1 | 2 | 3 | 3.5 | 4 | 5
+  ship_date: 2026-MM-DD
+  decided_by: claude1 | user
+  prior_baseline_date: 2026-MM-DD   # 비교 기준점
+
+  # ===== Quality 축 =====
+  quality:
+    paired_run_count: <int>           # paired-run 누적 ticket 수
+    findings_recall_pct: <float>      # after / before 발견 수 비율 (90% 이상이 ship)
+    blocker_misses: <int>             # after 에서 누락된 BLOCKER (절대 0 이어야 ship)
+    mutation_survivors_pct: <float>   # 생존자 비율 (≤ 5% 이어야 ship)
+    user_acceptance_pct: <float>      # 사용자 정성 OK 비율 (≥ 80% 이어야 ship)
+
+  # ===== Speed 축 =====
+  speed:
+    avg_ticket_wallclock_min: <float>   # baseline 대비 비율 측정
+    delta_vs_baseline_pct: <float>      # negative = 빨라짐
+    parallel_capacity_ticket_per_h: <float>
+
+  # ===== Cost 축 =====
+  cost:
+    c1_monthly_estimate_usd: <float>    # Interactive Max 5x
+    c2_monthly_estimate_usd: <float>    # Agent SDK $100/mo
+    c0_codex_monthly_estimate_usd: <float>
+    total_monthly_estimate_usd: <float>
+    delta_vs_baseline_pct: <float>      # negative = 절감
+
+  # ===== Security (ETHOS) 축 =====
+  security:
+    critical_misclassification_count: <int>   # random sample audit 으로 발견 — 절대 0
+    ethos_override_triggers: <int>            # ETHOS-keyword 자동 감지 발동 수
+    b_prime_escalation_rate_pct: <float>      # 10-25% 정상 / <10% = 임계값 보수적 / >25% = 분류 문제
+    full_chain_critical_pct: <float>          # critical 분류 ticket 중 full chain 적용된 비율 (절대 100%)
+
+  # ===== 4축 임계 (vetokill 발동 시 rollback 의무) =====
+  vetokill_triggered:
+    blocker_miss_1plus: false       # true 시 즉시 rollback
+    critical_misclass_1plus: false  # true 시 분류 protocol 재검토
+    velocity_drop_20pct: false      # true 시 paired-run 강도 완화 또는 정지
+    cost_increase_baseline: false   # true 시 원인 분석
+
+  # ===== 결정 =====
+  verdict: continue | pause | rollback
+  rationale: |
+    <한 단락 — 왜 이 결정을 했는지>
+  next_actions:
+    - <action 1>
+    - <action 2>
+  next_review_date: 2026-MM-DD       # 격주 1회 기본

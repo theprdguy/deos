@@ -1,141 +1,141 @@
-# Security Audit (OWASP A01–A10 + STRIDE)
+# Security Audit (OWASP A01~A10 + STRIDE)
 
-> Auto-applied to tickets with `ticket.security_audit: true` or auth/payment/permissions/external-input tickets.
-> A secrets scan (gitleaks) only catches embedded keys. Auth-flow and authorization defects need a separate review.
+> `ticket.security_audit: true` 또는 인증/결제/권한/외부 입력 ticket에 자동 적용.
+> secrets scan(gitleaks)은 박힌 키만 잡음. 인증 흐름·권한 결함은 별도 검토 필요.
 
-## Stated limitations (be honest)
+## 한계 명시 (정직)
 
-This prompt borrows only the *prompt portion* of GStack's `/cso`. The original's 22MB ML classifier, Haiku voting, canary tokens — none of that infrastructure is borrowed. Effectiveness ~70–80%. **High launch-impact areas (e.g. payment processing) require a separate external security audit.**
+이 prompt는 GStack `/cso`의 *prompt 부분*만 차용. 원본의 22MB ML 분류기, Haiku 투표, canary 토큰 같은 인프라는 미차용. 효과 70~80%. **출시 임팩트가 큰 영역(payment 처리 등)은 외부 보안 감사 별도 의뢰 필수**.
 
-## Procedure (CLAUDE1)
+## 적용 절차 (CLAUDE1)
 
-1. Identify the ticket's domain
-2. Review that domain plus the common items
-3. Classify findings as BLOCKER/WARNING (same severity scheme as adversarial review)
-4. Either fold the result into PR review, or use it as justification to strengthen the ticket dod
+1. ticket의 도메인 식별
+2. 해당 도메인 + 공통 항목 검토
+3. 발견을 BLOCKER/WARNING으로 분류 (adversarial review와 동일 severity)
+4. 결과를 PR review에 통합 또는 ticket의 dod 보강 사유로 사용
 
 ---
 
 ## OWASP Top 10 (2021)
 
 ### A01: Broken Access Control
-- [ ] **IDOR**: call an endpoint with another user's ID → returns 401/403?
-- [ ] **Privilege escalation**: a regular user calls an admin endpoint → blocked?
-- [ ] **Forced browsing**: any route that bypasses the auth middleware?
-- [ ] **CORS misconfiguration**: `Access-Control-Allow-Origin: *` + credentials?
-- [ ] **JWT verification**: `alg: none` allowed? signature check missing?
-- [ ] **Default deny**: every route blocked by default, allow explicitly?
+- [ ] **IDOR**: 다른 유저의 ID로 endpoint 호출 → 401/403 반환?
+- [ ] **Privilege escalation**: 일반 유저가 admin endpoint 호출 → 차단?
+- [ ] **Forced browsing**: 인증 미들웨어 우회 가능한 라우트?
+- [ ] **CORS misconfiguration**: `Access-Control-Allow-Origin: *` + credential?
+- [ ] **JWT 검증**: `alg: none` 허용? signature 검증 누락?
+- [ ] **Default deny**: 모든 라우트 기본 차단, 명시적 allow?
 
 ### A02: Cryptographic Failures
-- [ ] **Password hash**: bcrypt/scrypt/argon2 used? cost factor sufficient?
-- [ ] **Transport encryption**: HTTPS enforced? HSTS header?
-- [ ] **At-rest encryption**: PII stored in plaintext in the DB?
-- [ ] **Weak algorithm**: MD5/SHA1 used? DES?
-- [ ] **Hardcoded secret**: API key / JWT secret in code?
-- [ ] **CSRF token**: if removed, replaced by SameSite=Strict cookie?
+- [ ] **비밀번호 hash**: bcrypt/scrypt/argon2 사용? cost factor 충분?
+- [ ] **전송 암호화**: HTTPS 강제? HSTS 헤더?
+- [ ] **저장 암호화**: PII가 DB에 평문?
+- [ ] **약한 알고리즘**: MD5/SHA1 사용? DES?
+- [ ] **하드코딩 secret**: 코드에 API key/JWT secret?
+- [ ] **CSRF token**: 제거됐다면 SameSite=Strict 쿠키 대체?
 
 ### A03: Injection
-- [ ] **SQL injection**: parameterized query enforced? string concat?
-- [ ] **NoSQL injection**: MongoDB query taking user input directly?
-- [ ] **Command injection**: shell call with user input?
-- [ ] **LDAP injection**: search filter with user input?
-- [ ] **XSS**: escape on output? if markdown/HTML allowed, sanitize library used?
-- [ ] **HTML/XML injection**: feed/RSS output?
+- [ ] **SQL injection**: parameterized query 강제? string concat?
+- [ ] **NoSQL injection**: MongoDB query 직접 user input?
+- [ ] **Command injection**: shell 호출 시 user input?
+- [ ] **LDAP injection**: 검색 필터에 user input?
+- [ ] **XSS**: 출력 시 escape? markdown/HTML 허용 시 sanitize 라이브러리?
+- [ ] **HTML/XML injection**: feed/RSS 출력?
 
 ### A04: Insecure Design
-- [ ] **Threat model**: was a threat model written for this feature? (see STRIDE section)
-- [ ] **Rate limiting**: brute-force prevention?
-- [ ] **Lockout**: account lockout policy?
-- [ ] **Idempotency**: payments and other critical operations have idempotency key?
-- [ ] **Business logic abuse**: negative quantity, refund-then-refund-again, etc.?
+- [ ] **Threat model**: 이 기능에 위협 모델 작성됐는가? (STRIDE 섹션 참조)
+- [ ] **Rate limiting**: brute force 방지?
+- [ ] **Lockout**: 계정 잠금 정책?
+- [ ] **Idempotency**: 결제·중요 작업 idempotency key?
+- [ ] **Business logic abuse**: 음수 수량, 환불 후 재환불 등?
 
 ### A05: Security Misconfiguration
-- [ ] **Default credentials**: admin/admin enabled? force change at first setup?
-- [ ] **Error messages**: stack traces exposed? raw DB error?
-- [ ] **Unneeded features**: debug endpoints still present?
-- [ ] **Headers**: X-Frame-Options, CSP, X-Content-Type-Options set?
-- [ ] **Version disclosure**: Server header, X-Powered-By exposed?
-- [ ] **Dev tools**: GraphQL playground, /admin access restricted?
+- [ ] **기본 credential**: admin/admin 활성? 첫 setup 강제 변경?
+- [ ] **에러 메시지**: stack trace 노출? DB 에러 그대로?
+- [ ] **불필요한 기능**: 디버그 endpoint 남아 있음?
+- [ ] **Header**: X-Frame-Options, CSP, X-Content-Type-Options 설정?
+- [ ] **버전 노출**: Server header, X-Powered-By 노출?
+- [ ] **개발 도구**: GraphQL playground, /admin 접근 제한?
 
 ### A06: Vulnerable and Outdated Components
-- [ ] **Dependency audit**: `npm audit`, `pip-audit`, `cargo audit` running in CI?
-- [ ] **EOL libraries**: versions no longer receiving security patches?
-- [ ] **Pinning**: lockfile committed?
-- [ ] **CVE monitoring**: dependabot/renovate enabled?
+- [ ] **의존성 audit**: `npm audit`, `pip-audit`, `cargo audit` CI 실행?
+- [ ] **EOL 라이브러리**: 보안 패치 안 받는 버전?
+- [ ] **Pinning**: lockfile 커밋?
+- [ ] **CVE 모니터링**: dependabot/renovate 활성?
 
 ### A07: Identification and Authentication Failures
 - [ ] **Brute force**: rate limit + lockout?
-- [ ] **Credential stuffing**: known-leaked passwords blocked? (haveibeenpwned API)
-- [ ] **Session fixation**: session ID reissued after login?
+- [ ] **Credential stuffing**: 알려진 leak password 차단? (haveibeenpwned API)
+- [ ] **Session fixation**: 로그인 후 session ID 재발급?
 - [ ] **Weak password policy**: min length, charset?
-- [ ] **2FA backup code**: single-use? stored hashed?
-- [ ] **Password reset**: token single-use? time limit?
+- [ ] **2FA backup code**: 1회용? hashed 저장?
+- [ ] **Password reset**: 토큰 단일 사용? 시간 제한?
 
 ### A08: Software and Data Integrity Failures
-- [ ] **CI/CD pipeline**: pulling deps from untrusted sources?
-- [ ] **Auto-update**: signature verification?
-- [ ] **Deserialization**: `pickle` / `yaml.load()` on user input?
-- [ ] **CSP**: script-src restricted? eval/inline blocked?
+- [ ] **CI/CD pipeline**: untrusted source에서 dependency 가져옴?
+- [ ] **Auto-update**: signature 검증?
+- [ ] **Deserialization**: pickle/yaml.load() user input?
+- [ ] **CSP**: script-src 제한? eval/inline 차단?
 
 ### A09: Security Logging and Monitoring Failures
-- [ ] **Auth event logs**: login/logout/lockout/password-reset all recorded?
-- [ ] **PII masking**: are passwords/tokens/card numbers in logs?
-- [ ] **Timestamps**: UTC + ISO 8601?
-- [ ] **Log integrity**: append-only? external storage?
-- [ ] **Alerts**: notify on consecutive failures, privilege escalation?
+- [ ] **Auth event 로그**: login/logout/lockout/password reset 모두 기록?
+- [ ] **PII 마스킹**: 로그에 비밀번호/토큰/카드번호?
+- [ ] **타임스탬프**: UTC + ISO 8601?
+- [ ] **로그 무결성**: append-only? 외부 저장?
+- [ ] **Alert**: 연속 실패, 권한 escalation 시 알림?
 
 ### A10: Server-Side Request Forgery (SSRF)
-- [ ] **External URL fetch**: user-supplied URL → block internal metadata endpoint (169.254.169.254)?
-- [ ] **URL allowlist**: whitelist of callable domains?
-- [ ] **Redirect chasing**: external redirect → block internal IP?
-- [ ] **Webhook**: validated for both directions (us → external configured URL, external → us)?
+- [ ] **외부 URL fetch**: user-supplied URL → 내부 메타데이터 endpoint(169.254.169.254) 차단?
+- [ ] **URL allowlist**: 호출 가능한 도메인 화이트리스트?
+- [ ] **Redirect 추적**: 외부 redirect → 내부 IP 차단?
+- [ ] **Webhook**: 우리 서버 → 외부 지정 URL, 외부 → 우리 처리 모두 검증?
 
 ---
 
 ## STRIDE Threat Modeling
 
-For the ticket's feature, identify threats across all six categories.
+ticket 기능에 대해 6개 카테고리별 위협 식별.
 
-### S — Spoofing
-- [ ] Possible to impersonate another user? (session theft, JWT forgery)
-- [ ] Possible to impersonate a system/service? (DNS spoofing, MITM)
-- [ ] Can an anonymous call appear authenticated?
+### S — Spoofing (정체 위조)
+- [ ] 다른 사용자로 위장 가능? (session 탈취, JWT 위조)
+- [ ] 시스템/서비스로 위장 가능? (DNS spoofing, MITM)
+- [ ] 익명 호출이 인증된 호출처럼 보일 수 있는가?
 
-### T — Tampering
-- [ ] Can the client tamper with server-decided values? (price, permission)
-- [ ] Tampering in transit? (HTTPS enforced, signatures)
-- [ ] Verification when a DB row is tampered with directly? (audit log, checksum)
+### T — Tampering (변조)
+- [ ] 클라이언트가 서버 결정 변조 가능? (가격, 권한)
+- [ ] 전송 중 변조? (HTTPS 강제, signature)
+- [ ] DB row 직접 변조 시 검증? (audit log, checksum)
 
-### R — Repudiation
-- [ ] Evidence preserved for user actions? (audit log, signed receipt)
-- [ ] Log tampering prevented? (append-only, external storage)
+### R — Repudiation (부인)
+- [ ] 사용자 행위 증거 보존? (감사 로그, 서명된 영수증)
+- [ ] 로그 변조 방지? (append-only, 외부 저장)
 
-### I — Information Disclosure
-- [ ] PII in error messages?
-- [ ] User enumeration via response differences? (signup "already exists" vs "success")
-- [ ] Debug info exposed? (stack trace, version)
-- [ ] Information extractable via timing attack? (string comparison)
+### I — Information Disclosure (정보 노출)
+- [ ] 에러 메시지에 PII?
+- [ ] 응답 차이로 user enumeration 가능? (signup 시 "이미 존재" vs "성공")
+- [ ] 디버그 정보 노출? (stack trace, version)
+- [ ] timing attack으로 정보 추출? (string 비교)
 
 ### D — Denial of Service
 - [ ] Rate limit?
-- [ ] Heavy queries blocked? (timeout, complexity limit)
-- [ ] File upload size limit?
-- [ ] regex DoS (ReDoS) possible?
+- [ ] 무거운 query 차단? (timeout, complexity limit)
+- [ ] 파일 업로드 size limit?
+- [ ] regex DoS (ReDoS) 가능?
 
-### E — Elevation of Privilege
-- [ ] Path from regular → admin?
-- [ ] Access to another tenant's data?
-- [ ] OS-level command execution possible?
+### E — Elevation of Privilege (권한 상승)
+- [ ] 일반 → admin 경로?
+- [ ] 다른 tenant 데이터 접근?
+- [ ] OS-level command 실행 가능?
 
 ---
 
-## Output format
+## 출력 형식
 
 ```markdown
 ## Security Audit — T-XXX
 
-### Applicable domains
-- OWASP: A01, A02, A07 (e.g. an auth ticket)
+### 적용 도메인
+- OWASP: A01, A02, A07 (예: 인증 ticket)
 - STRIDE: S, I, E
 
 ### Findings
@@ -143,25 +143,25 @@ For the ticket's feature, identify threats across all six categories.
 - **OWASP**: A01 (Broken Access Control)
 - **STRIDE**: E (Elevation of Privilege)
 - **Location**: `apps/api/src/auth/middleware.py:45`
-- **Issue**: the JWT `role` claim is mutable by the client (signature verification missing)
-- **Evidence**: <code excerpt or PoC>
-- **Required Action**: <concrete fix direction>
+- **Issue**: JWT의 `role` claim을 클라이언트가 변조 가능 (signature 검증 누락)
+- **Evidence**: <코드 인용 또는 PoC>
+- **Required Action**: <구체적 수정 방향>
 
 ### WARNING 1 ...
 
-### External-audit recommendation
-- [ ] High launch impact (payment, PII at scale, multi-tenant) → separate external security audit required
+### 외부 감사 권장 여부
+- [ ] 출시 임팩트 큼 (payment, PII at scale, multi-tenant) → 외부 보안 감사 별도 의뢰 필요
 ```
 
 ## Anti-patterns
 
-- "Internal tool, security doesn't matter" → applies to everything. Internal tools are the most often breached.
-- "I heard this library is safe" → verify directly. Check CVEs.
-- "Test environment, hardcoded is OK" → secrets always live in env. Someone always commits to prod.
-- "All OWASP items pass" → STRIDE applies too. New threats are not in the standard.
+- "내부 도구라 보안 안 중요" → 모든 적용. 내부 도구가 가장 자주 침해됨.
+- "이 라이브러리는 안전하다고 들었음" → 직접 검증. CVE 확인.
+- "test 환경이라 hardcoded OK" → secrets는 항상 env. 누군가 prod에 commit함.
+- "OWASP 항목 다 통과" → STRIDE도 적용. 새 위협은 표준에 없음.
 
-## References
-- `devos/prompts/claude/prd-intake-checklist.md` — required per-domain questions
-- `devos/prompts/claude/review-adversarial.md` — shared severity format
-- `devos/AI.md` Ticket Standard, `security_audit` field
+## 참조
+- `devos/prompts/claude/prd-intake-checklist.md` — 도메인별 강제 질문
+- `devos/prompts/claude/review-adversarial.md` — severity 형식 통합
+- `devos/AI.md` Ticket Standard `security_audit` 필드
 - OWASP Top 10 (2021): https://owasp.org/Top10/

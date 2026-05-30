@@ -1,34 +1,36 @@
 # CONTEXT (TL;DR)
 
+> ~100 lines max. Updated by CLAUDE1 each session. Ships as a generic example.
+
 ## What we are building (1-2 lines)
 - (TBD) — Fill in your project description here.
 
 ## Operating mode
-- SSOT-first, Contract-first, Ownership, Small PR, A-Mode questions
-- `make pr-check` is the minimum gate
-- Instruction files: AGENTS.md (Codex), .claude-b/CLAUDE.md (Claude 2), .claude/CLAUDE.md (Claude 1)
-- Session logs in devos/logs/ for cross-agent visibility
-- Approval required before dispatch: `make approve`
+- SSOT-first, Contract-first, Ownership (1 PR = 1 ticket), Boil-the-Lake completeness.
+- `os3 pr-check` is the minimum baseline gate (secrets scan, contract sync, scope guard, session log, TDD first-commit).
+- Approval required before dispatch: `os3 approve`.
+- Session logs in devos/logs/ for cross-agent visibility.
+- Instruction files: `.claude/CLAUDE.md` (CLAUDE1), `.claude/agents/*.md` (sub-agents), `AGENTS.md` (CODEX).
 
 ## Agent Roster
-- **claude1-planner** (active): Planner + Researcher — .claude/CLAUDE.md
-- **claude2-app** (active): App Builder (Account B) — .claude-b/CLAUDE.md
-- **codex-platform** (active): Platform Builder — AGENTS.md
+- **CLAUDE1 (main)**: Planner + Researcher + SSOT manager + Orchestrator — never implements directly.
+- **builder / reviewer / designer / security** (in-session sub-agents): implement + read-only review chain.
+- **CODEX** (external CLI): platform builder + cross-model second opinion (b').
 
 ## Tech Stack
-- (TBD) — Fill in your stack here.
+- Stack-agnostic OS layer (Python dispatcher/CLI + file-based SSOT). Product app stack is chosen per project.
+- (TBD) — Fill in your product stack here.
 
-## Current milestone
-- (TBD)
-
-## What works now (demo path)
-- (TBD) Once a project exists, define the shortest demo flow here.
+## Operating Modes
+- exploration → productization → production. Gate strictness rises with the mode
+  (docs/policy/MODE_GATE_MATRIX.md). Safety gates (secrets, scope, destructive action) always block.
 
 ## Key decisions (top 5)
 - (TBD)
 
-## Active tickets
-- See tasks/QUEUE.yaml
+## Locked Decisions (D-XX)
+- Non-negotiable decisions a ticket may not violate; a violation is an automatic reviewer BLOCKER.
+- (none yet — add as they are locked)
 
-## Open questions
-- See questions/QUEUE.md (filter: [open])
+## Active tickets / Open questions
+- See tasks/QUEUE.yaml and questions/QUEUE.md (filter: [open]).

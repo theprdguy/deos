@@ -13,38 +13,94 @@ agents:
     can_modify:
       - "devos/**"
       - ".claude/**"
-      - ".claude-b/**"
       - "AGENTS.md"
-      - "os2.yaml"
-      - "Makefile"
+      - "osn.yaml"   # 옛 os2.yaml — CLEANUP-NAMING-01 까지 리네임 잔존
     cannot_modify:
       - "apps/**"
       - "packages/**"
       - "scripts/**"
-    mode: "interactive | pipe"  # local CLI or remote via os2-server
+      - "infra/**"
+      - "tests/**"
+    mode: "interactive"  # local CLI
     account: A
     status: active
-    notes: "Uses MCP/context7 for research."
+    notes: "Uses MCP/context7 for research. Orchestrates sub-agents (builder/reviewer/designer/security) via Agent tool + CODEX via subprocess."
 
-  - id: claude2-app
-    role: app-builder
-    description: "App builder. Implements backend logic + GUI design/implementation. Strength: design judgment, component architecture, UX flow."
-    instruction_file: .claude-b/CLAUDE.md
+  # claude2-app entry removed — sunset 2026-05-13 (W6 of osn-claude2-sunset plan).
+  # Successor: builder sub-agent (in-session, Account A). See entries below.
+  # Historical: ARCHIVE.yaml T-OS2-V36-01 chain references this id.
+
+  # ─────────────────────────────────────────────────────────────────
+  # Sub-agents (osn, plan: osn-claude2-sunset W1)
+  # In-session via Claude Code Agent tool. Defined in .claude/agents/{name}.md
+  # ─────────────────────────────────────────────────────────────────
+
+  - id: builder
+    role: app-builder-subagent
+    description: "App + platform implementer (sub-agent). CLAUDE2 의 후신 — backend (apps/api/src/**), GUI (apps/web/**), business logic. test_owner=CODEX 인 cross-test ticket 은 CODEX failing test commit 후 시작."
+    instruction_file: .claude/agents/builder.md
     capabilities: [backend, api, service-logic, database, gui-design, ui-components, ux-flow]
     can_modify:
       - "apps/api/src/**"
-      - "apps/web/**"  # shared scope with codex, separated by ticket files
+      - "apps/web/**"
       - "packages/shared/**"
-      - "devos/logs/*-claude2-*"
+      - "devos/logs/*-builder-*"
       - "devos/questions/QUEUE.md"
     cannot_modify:
       - "devos/tasks/QUEUE.yaml"
       - "devos/PROJECT_STATE.md"
-    mode: "pipe"  # claude -p with account B config
-    account: B
-    config_dir: ".claude-b"
+    mode: "in-session"
+    account: A
+    model_pin: sonnet
+    tools: [Read, Edit, Write, Bash, Grep, Glob, NotebookEdit]
     status: active
-    notes: "Uses separate Claude Code config dir (.claude-b) for Account B credentials. Prefer for design-heavy GUI tasks."
+    notes: "Spawned via Agent tool by CLAUDE1 main during /dispatch. Own context window. Account A quota — replaces Account B utilization."
+
+  - id: reviewer
+    role: adversarial-reviewer-subagent
+    description: "Adversarial PR reviewer (sub-agent). Read-only — 발견해도 본인이 못 고침 (구조적 객관성). DOD↔test 매핑, assertion specificity, scope guard, contract sync. uncertainty flag → CODEX (b') 자동 발동."
+    instruction_file: .claude/agents/reviewer.md
+    capabilities: [adversarial-review, scope-guard, dod-test-mapping, assertion-specificity, uncertainty-flag]
+    can_modify: []   # ★ READ-ONLY — 권한 시스템 차원 강제 ★
+    cannot_modify:
+      - "**/*"   # 모든 경로
+    mode: "in-session"
+    account: A
+    model_pin: opus
+    tools: [Read, Grep, Glob, Bash]   # Edit/Write 미포함
+    status: active
+    notes: "tools allowlist 가 read-only 강제. 발견 이슈는 main 에 보고만. uncertainty=true 시 main 이 CODEX 자동 호출 (b' adaptive)."
+
+  - id: designer
+    role: ui-ux-designer-subagent
+    description: "UI/UX 디자이너 페르소나 (sub-agent). Read-only. PRD intake Step 0.6 + UI ticket merge 전 검토. 옛 designer-review.md self-invoke 의 sub-agent 격상."
+    instruction_file: .claude/agents/designer.md
+    capabilities: [ui-consistency, info-hierarchy, state-coverage, journey-gaps, accessibility, non-developer-protection]
+    can_modify: []
+    cannot_modify:
+      - "**/*"
+    mode: "in-session"
+    account: A
+    model_pin: sonnet
+    tools: [Read, Grep, Glob]
+    mcp_servers: [pencil]
+    status: active
+    notes: "designer-review.md 6 카테고리 검토. UI 출력 0% ticket 은 skip."
+
+  - id: security
+    role: security-auditor-subagent
+    description: "Security auditor (sub-agent). OWASP A01-A10 + STRIDE. Read-only. ticket.security_audit==true 시 자동 호출 (auth/payment/permissions/external input — devos/AI.md auto-force)."
+    instruction_file: .claude/agents/security.md
+    capabilities: [owasp-a01-a10, stride, secret-scan-review, vulnerability-detection]
+    can_modify: []
+    cannot_modify:
+      - "**/*"
+    mode: "in-session"
+    account: A
+    model_pin: opus
+    tools: [Read, Grep, Glob, Bash]
+    status: active
+    notes: "security-audit.md 체크리스트. uncertainty=true 시 b' 트리거."
 
   - id: codex-platform
     role: platform-builder

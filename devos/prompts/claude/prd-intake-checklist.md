@@ -1,148 +1,148 @@
-# PRD Intake Checklist (non-developer protection)
+# PRD Intake Checklist (비개발자 보호)
 
-> When CLAUDE1 receives a PRD, **before decomposing**, follow this file to require per-domain questions to the user about missing items. Do not decompose a happy-path-only PRD straight into tickets.
+> CLAUDE1이 PRD를 받으면 **decompose 전에** 이 파일을 따라 도메인별 누락 항목을 사용자에게 강제 질문한다. happy path만 적힌 PRD를 그대로 ticket으로 분해하지 않는다.
 
-## Operating principles
+## 운용 원칙
 
-1. Identify domain keywords in the PRD → ask the user every item in the relevant section
-2. The "we didn't build it because the PRD didn't mention it" pattern is treated as an **Iron Law violation**
-3. For items the user answers as "not needed", record them in the PRD with an *explicit N/A reason* (intentional exclusion, not absence)
-4. Record user answers in the PRD or in `devos/questions/QUEUE.md` → these become the basis for the ticket context
+1. PRD에서 도메인 키워드를 식별 → 해당 섹션의 항목을 모두 사용자에게 질문
+2. "PRD에 없으니 안 만들었어요" 패턴은 **Iron Law 위반**으로 간주
+3. 사용자가 "필요 없음"이라고 답한 항목은 PRD에 *명시적 N/A 사유*로 기록 (없는 게 아니라 의도적 제외)
+4. 답변 후 사용자 응답을 PRD 또는 `devos/questions/QUEUE.md`에 기록 → ticket context의 근거가 됨
 
 ---
 
-## A. Authentication domain
+## A. Authentication / 인증 도메인
 
-Keywords: login, sign up, member, auth, OAuth, password, session
+키워드: 로그인, 가입, 회원, 인증, OAuth, 비밀번호, 세션
 
-### Required questions
-- [ ] **Login failure handling**: wrong credentials → what message? lockout policy?
-- [ ] **Lockout**: lock after N failures? lock duration? unlock method?
-- [ ] **Password reset**: email link? SMS? expiration time?
-- [ ] **2FA / MFA**: introduce it? optional/mandatory? backup codes?
+### 강제 질문
+- [ ] **Login 실패 처리**: 잘못된 credentials → 어떤 메시지? lockout 정책?
+- [ ] **Lockout**: N회 실패 시 잠금? 잠금 시간? 해제 방법?
+- [ ] **Password reset**: 이메일 링크? SMS? 만료 시간?
+- [ ] **2FA / MFA**: 도입? optional/mandatory? backup code?
 - [ ] **Session expiry**: idle timeout? absolute timeout? "remember me"?
-- [ ] **Concurrent session**: allow same account to be signed in simultaneously? force logout?
-- [ ] **Logout**: single device? all-devices? token revoke?
-- [ ] **Account deletion**: immediate delete? soft delete + grace period? data handling?
-- [ ] **OAuth / Social login**: which provider? scope? merge policy with existing accounts?
-- [ ] **Audit log**: record login/failure/lockout? retention period?
+- [ ] **Concurrent session**: 같은 계정 동시 로그인 허용? 강제 로그아웃?
+- [ ] **Logout**: 단일 디바이스? all-devices? token revoke?
+- [ ] **Account deletion**: 즉시 삭제? soft delete + grace period? 데이터 처리?
+- [ ] **OAuth / Social login**: provider? scope? 기존 계정 merge 정책?
+- [ ] **Audit log**: 로그인/실패/lockout 기록? 보존 기간?
 
 ---
 
-## B. Payment domain
+## B. Payment / 결제 도메인
 
-Keywords: payment, billing, refund, subscription
+키워드: 결제, 청구, 환불, 구독, billing, payment, subscription
 
-### Required questions
-- [ ] **Success path**: which PG? card / bank transfer / easy-pay — how far?
-- [ ] **Failure**: card declined, insufficient balance, network timeout — handle each?
-- [ ] **Refund**: partial/full? time limit? automatic/manual?
-- [ ] **Dispute / chargeback**: notification flow? evidence collection?
-- [ ] **Duplicate prevention**: idempotency key? duplicate-charge detection?
-- [ ] **Subscription**: trial → paid conversion? renewal failure? downgrade?
-- [ ] **Tax / VAT**: per-country tax rate? invoice?
-- [ ] **PCI scope**: storing card info directly? store only PG token?
-- [ ] **Currency**: multi-currency? exchange rate timing?
-- [ ] **Audit log**: record every payment/refund/failure? permanent retention?
+### 강제 질문
+- [ ] **Success path**: 어떤 PG? 카드/계좌이체/간편결제 어디까지?
+- [ ] **Failure**: 카드 거절, 잔액 부족, 네트워크 타임아웃 각각 처리?
+- [ ] **Refund**: 부분/전액? 시간 제한? 자동/수동?
+- [ ] **Dispute / chargeback**: 알림 흐름? 증빙 수집?
+- [ ] **Duplicate prevention**: idempotency key? 중복 결제 감지?
+- [ ] **Subscription**: trial → paid 전환? 갱신 실패? 다운그레이드?
+- [ ] **Tax / VAT**: 국가별 세율? 인보이스?
+- [ ] **PCI scope**: 카드 정보 직접 저장? PG 토큰만 저장?
+- [ ] **Currency**: 다중 통화? 환율 timing?
+- [ ] **Audit log**: 모든 결제/환불/실패 기록? 영구 보존?
 
 ---
 
-## C. Data Input / input validation domain
+## C. Data Input / 입력 검증 도메인
 
-Keywords: form, input, validation, registration, submission
+키워드: 폼, form, 입력, validation, 등록, 작성
 
-### Required questions
+### 강제 질문
 - [ ] **Length**: min/max length? bytes vs characters?
-- [ ] **Charset**: allow Korean / emoji? special characters?
-- [ ] **Format**: regex baseline for email / phone / URL?
-- [ ] **SQL injection**: enforce ORM/parameterized query? ban raw query?
-- [ ] **XSS**: escape on output? scope of allowed markdown/HTML?
-- [ ] **Rate limit**: same user N times/min?
-- [ ] **Server-side**: enforce server validation in addition to client validation?
-- [ ] **Error message**: separate user-friendly vs debug messages?
+- [ ] **Charset**: 한글/이모지 허용? 특수문자?
+- [ ] **Format**: 이메일/전화/URL 정규식 기준?
+- [ ] **SQL injection**: ORM/parameterized query 강제? raw query 금지?
+- [ ] **XSS**: 출력 시 escape? markdown/HTML 허용 범위?
+- [ ] **Rate limit**: 같은 사용자 N회/분?
+- [ ] **Server-side**: 클라이언트 검증 외 서버 검증 강제?
+- [ ] **Error message**: 사용자 친화적 vs 디버그용 분리?
 
 ---
 
-## D. File Upload domain
+## D. File Upload / 파일 업로드 도메인
 
-Keywords: upload, file, image, attachment
+키워드: 업로드, upload, 파일, 이미지, 첨부
 
-### Required questions
-- [ ] **Size limit**: per-file / per-request / per-user?
-- [ ] **Type / MIME**: whitelist? magic-byte verification?
-- [ ] **Malware scan**: ClamAV? external service? sync/async?
-- [ ] **Path traversal**: sanitize user-supplied filenames?
-- [ ] **Storage**: local / S3 / cloud? public vs presigned?
-- [ ] **Image processing**: resize? EXIF strip? format conversion?
-- [ ] **Quota**: total per-user storage cap?
-- [ ] **Deletion**: immediate on user request? GDPR 30 days?
-
----
-
-## E. External API domain
-
-Keywords: API, integration, webhook, external service
-
-### Required questions
-- [ ] **Rate limit**: external service limit? our-side backoff?
-- [ ] **Timeout**: separate connect/read?
-- [ ] **Circuit breaker**: cut off on consecutive failures? half-open recovery?
-- [ ] **Retry policy**: idempotent only? exponential backoff?
-- [ ] **Webhook security**: signature verification? replay protection?
-- [ ] **Secret rotation**: API key rotation procedure?
-- [ ] **Error mapping**: external errors → our errors?
-- [ ] **Audit**: record every external call? excluding PII?
+### 강제 질문
+- [ ] **Size limit**: 파일별/요청별/사용자별?
+- [ ] **Type / MIME**: 화이트리스트? magic byte 검증?
+- [ ] **Malware scan**: ClamAV? 외부 서비스? 동기/비동기?
+- [ ] **Path traversal**: 사용자 입력 파일명 sanitize?
+- [ ] **Storage**: 로컬/S3/Cloud? public vs presigned?
+- [ ] **Image processing**: 리사이즈? EXIF strip? format 변환?
+- [ ] **Quota**: 사용자당 총 용량 한도?
+- [ ] **Deletion**: 사용자 요청 즉시? GDPR 30일?
 
 ---
 
-## F. Permissions domain
+## E. External API / 외부 API 호출 도메인
 
-Keywords: permission, role, admin, access
+키워드: API, 연동, integration, webhook, 외부 서비스
 
-### Required questions
-- [ ] **Role definition**: what roles? hierarchy among roles?
-- [ ] **Permission granularity**: action level? resource level?
-- [ ] **IDOR prevention**: verify access to other users' data?
-- [ ] **Privilege escalation**: procedure for general → admin promotion?
-- [ ] **Multi-tenant**: how is tenant isolation enforced?
-- [ ] **Audit**: record permission changes?
-
----
-
-## G. Common (every PRD)
-
-Verify on every PRD regardless of keywords.
-
-### Required questions
-- [ ] **Empty state**: UI/message when there are zero records?
-- [ ] **Loading state**: indicator while loading?
-- [ ] **Error state**: what does the user see on a system error?
-- [ ] **i18n**: multi-language? per-locale fallback?
-- [ ] **Accessibility (a11y)**: screen reader? keyboard navigation? color contrast?
-- [ ] **Mobile**: responsive? touch target size?
-- [ ] **Offline**: behavior when network drops?
-- [ ] **Audit log**: who/when/what changed?
-- [ ] **Personal data (PII)**: collection / storage / deletion policy?
-- [ ] **Rate limit (global)**: DDoS / abuse prevention?
+### 강제 질문
+- [ ] **Rate limit**: 외부 서비스 제한? 우리 측 backoff?
+- [ ] **Timeout**: connect/read 별도?
+- [ ] **Circuit breaker**: 연속 실패 시 차단? half-open 복구?
+- [ ] **Retry policy**: idempotent만? exponential backoff?
+- [ ] **Webhook security**: signature 검증? replay 방지?
+- [ ] **Secret rotation**: API key 변경 절차?
+- [ ] **Error mapping**: 외부 에러 → 우리 에러 변환?
+- [ ] **Audit**: 모든 외부 호출 기록? PII 제외?
 
 ---
 
-## Procedure (CLAUDE1)
+## F. Permissions / 권한 도메인
 
-1. On receiving a PRD, scan for keywords → identify the relevant domain sections
-2. Ask each item to the user, batched at 5 or fewer at a time (avoid fatigue)
-3. Record user answers in the PRD appendix or in `devos/questions/QUEUE.md`
-4. After all answers are in, proceed to ticket decomposition
-5. Confirm each ticket's dod includes the relevant items as a success-case + error-case pair
+키워드: 권한, role, permission, admin, 관리자, 접근
 
-## Stated limitations
+### 강제 질문
+- [ ] **Role 정의**: 역할 종류? 역할 간 hierarchy?
+- [ ] **Permission granularity**: action 레벨? resource 레벨?
+- [ ] **IDOR 방지**: 다른 사용자 데이터 접근 검증?
+- [ ] **Privilege escalation**: 일반 → admin 승급 절차?
+- [ ] **Multi-tenant**: tenant 격리 어떻게?
+- [ ] **Audit**: 권한 변경 기록?
 
-- New domains (AI model theft, prompt injection) are missed unless covered by standard OWASP/STRIDE
-- A user's mistaken judgment ("internal tool, security doesn't matter") cannot be caught here — the answer itself is the user's responsibility
-- High launch-impact areas (payment, etc.) require a separate external security audit
+---
 
-## References
+## G. 공통 (모든 PRD)
 
-- `devos/prompts/claude/security-audit.md` — OWASP/STRIDE detail (Week 2)
-- `devos/prompts/claude/decompose-prd.md` — Step 0 invokes this file
-- `devos/ETHOS.md` non-developer protection principles
+키워드와 무관하게 모든 PRD에서 확인.
+
+### 강제 질문
+- [ ] **Empty state**: 데이터 0개일 때 UI/메시지?
+- [ ] **Loading state**: 로딩 중 표시?
+- [ ] **Error state**: 시스템 에러 시 사용자에게 무엇을?
+- [ ] **i18n**: 다국어? locale별 fallback?
+- [ ] **접근성 (a11y)**: 스크린리더? 키보드 navigation? color contrast?
+- [ ] **모바일**: 반응형? touch target 크기?
+- [ ] **오프라인**: 네트워크 끊김 시 동작?
+- [ ] **감사 로그**: 누가/언제/무엇을 변경?
+- [ ] **개인정보 (PII)**: 수집/저장/삭제 정책?
+- [ ] **Rate limit (전역)**: DDoS/abuse 방지?
+
+---
+
+## 사용 절차 (CLAUDE1)
+
+1. PRD를 받으면 키워드 스캔 → 해당 도메인 섹션 식별
+2. 각 항목을 사용자에게 한 번에 5개 이하로 묶어 질문 (피로 방지)
+3. 사용자 답변을 PRD 부록 또는 `devos/questions/QUEUE.md`에 기록
+4. 답변 완료 후 ticket 분해 진행
+5. 각 ticket의 dod에 해당 항목이 success-case + error-case 쌍으로 들어가는지 확인
+
+## 한계 명시
+
+- 새로운 도메인(AI 모델 탈취, prompt injection)은 표준 OWASP/STRIDE에 없으면 누락
+- "내부 도구라 보안 안 중요"라는 사용자 잘못된 판단은 못 잡음 — 답변 자체는 사용자 책임
+- 출시 임팩트 큰 영역(payment 등)은 외부 보안 감사 별도 의뢰 필수
+
+## 참조
+
+- `devos/prompts/claude/security-audit.md` — OWASP/STRIDE 상세 (Week 2)
+- `devos/prompts/claude/decompose-prd.md` — Step 0에서 이 파일 호출
+- `devos/ETHOS.md` 비개발자 보호 원칙

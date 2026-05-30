@@ -1,28 +1,28 @@
 # Project State (SSOT)
 
+> Highest-precedence source of truth. CLAUDE1 updates this each session.
+> This file ships as a generic example — replace the (TBD) lines with your project.
+
 ## North Star
 - (TBD) One sentence describing what we're building and why.
 
 ## Current Milestone
-- Bootstrap / Operating System v3.1
+- (TBD) e.g. "M1 — first user-facing flow"
 - DoD:
-  - SSOT files exist and are kept updated
-  - `make install && make start` works
-  - Approval workflow operational (`make approve`, `make reject`)
-  - Dispatch working (`make dispatch T=T-XXX`, `make dispatch-all`)
-  - Gate pipeline wired (make test, make scan-secrets)
-  - 3-agent registry configured (devos/agents/registry.yaml)
-  - Session log system operational (devos/logs/)
+  - (TBD) verifiable acceptance criteria for the milestone
 
 ## What works now (demo path)
-- (TBD)
+- (TBD) the shortest path that demonstrates current capability
 
 ## Agent Status
-| Agent | Role | Status | Instruction File |
-|-------|------|--------|------------------|
-| claude1-planner | Planner + Researcher | active | .claude/CLAUDE.md |
-| claude2-app | App Builder (Account B) | active | .claude-b/CLAUDE.md |
-| codex-platform | Platform Builder | active | AGENTS.md |
+| Agent | Role | Mode | Instruction File |
+|-------|------|------|------------------|
+| CLAUDE1 (main) | Planner + Researcher + SSOT manager + Orchestrator | interactive | .claude/CLAUDE.md |
+| builder (sub-agent) | App / product implementer | in-session (R/W) | .claude/agents/builder.md |
+| reviewer (sub-agent) | Adversarial PR reviewer | in-session (READ-ONLY) | .claude/agents/reviewer.md |
+| designer (sub-agent) | UI/UX first-pass review | in-session (READ-ONLY) | .claude/agents/designer.md |
+| security (sub-agent) | OWASP / STRIDE auditor | in-session (READ-ONLY) | .claude/agents/security.md |
+| CODEX | Platform builder + cross-model (b') | external CLI subprocess | AGENTS.md |
 
 ## In progress
 - (TBD)
@@ -31,11 +31,7 @@
 - See questions/QUEUE.md
 
 ## Decisions (latest)
-- ADRs live under docs/ADR/
-- v3.1: Automated gate pipeline (tests → secrets → agent-review → verify)
-- v3.1: Auto-chain dispatch — completed tickets unlock downstream automatically
-- v3.1: Priority-based retry with rollback on gate failure
-- v3.1: Claude 2 (Account B) replaces Gemini for app/GUI work
+- Locked decisions live in devos/CONTEXT.md § Locked Decisions; long-form ADRs under devos/docs/ADR/.
 
 ## Next dispatch hint
-- When a concrete project appears: fill in PROJECT_STATE, CONTEXT, submit first PRD
+- When a concrete project appears: fill in PROJECT_STATE + CONTEXT, then submit the first PRD.

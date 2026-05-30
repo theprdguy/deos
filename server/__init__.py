@@ -1,2 +1,2 @@
-# os2-server: Agentic Coding OS v3.0
+# OS3 server: Product-Building Operating System v0.1
 # CLI dispatcher for multi-agent orchestration

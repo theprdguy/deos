@@ -1,130 +1,109 @@
-# START HERE — Vibe Coding OS v3.4
+# START HERE — dev-os (Host-OS)
 
-## First-time setup
+> 랩탑별 총괄 호스트 OS(`~/dev-os`) + 하위 독립 프로젝트. 빠른 시작 가이드.
+> 전체 사용법·아키텍처: `README.md` · 운영 룰: `.claude/CLAUDE.md` · 에이전트 헌법: `devos/AI.md`.
+
+## 1. 최초 1회 설정
 
 ```bash
-make setup          # CLI checks + Python venv + Claude 2 auth guide
-# or:
-make install        # just Python dependencies
+# 1) 호스트 OS 클론 (랩탑마다 한 번) — 이미 ~/dev-os 가 있으면 생략
+git clone <your-os-repo> ~/dev-os && cd ~/dev-os
+
+# 2) Python 의존성
+pip install -r requirements.txt
+
+# 3) os3 명령을 어디서든 쓰도록 PATH 등록 (한 번만)
+echo 'export PATH="$HOME/dev-os/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc
+os3 projects   # 동작 확인
 ```
 
-**Optional — Claude 2 (Account B):**
+### 상시 서버 (서브 랩탑)
 ```bash
-CLAUDE_CONFIG_DIR=.claude-b claude login
-# Without this, CLAUDE2 tickets automatically fall back to Codex
-```
-
-**Optional — sub-machine daemon (auto-start on boot):**
-```bash
-# Edit com.os2.server.plist — update WorkingDirectory to your project path
-make install-daemon
-```
-
----
-
-## Daily routine
-
-**Start a session:**
-```bash
-make pickup         # git pull + CLAUDE2 preflight check + start server
-# or:
-make start          # just start server
-```
-> `make pickup` blocks if `.claude-b/.claude.json` (Account B auth) is missing.
-> To fix: `CLAUDE_CONFIG_DIR=.claude-b claude login`
-
-**Open Claude 1:**
-```bash
-claude              # auto-reads .claude/CLAUDE.md (shows CLAUDE2 status banner on start)
-```
-
-**Submit a PRD to Claude 1 → review the plan → approve:**
-```bash
-make pending        # review pending plan
-make approve        # approve → tickets added → builders auto-dispatched
-# or:
-make reject R="feedback"  # reject → Claude 1 revises
-```
-
-**Check progress:**
-```bash
-make queue          # ticket statuses
-make logs           # recent session logs
-make status         # project status
-```
-
-**End session:**
-```bash
-make handoff        # stop + git push (switch machines)
-# or:
-make stop           # just stop server
+# com.os3.server.plist 의 WorkingDirectory 를 ~/dev-os 로 수정 후
+cp ~/dev-os/com.os3.server.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.os3.server.plist
 ```
 
 ---
 
-## New project setup
+## 2. 데일리 루틴
 
-1. Fill in `devos/PROJECT_STATE.md` — north star, milestone
-2. Fill in `devos/CONTEXT.md` — what you're building, tech stack
-3. Submit first PRD to Claude 1
-4. `make approve` → builders start automatically
-
----
-
-## Command cheat sheet
-
+### 출근 — 현황 파악
 ```bash
-# Setup
-make setup            # first-time setup
-make install          # Python dependencies only
+cd ~/dev-os && git pull
+os3 overview            # 전 프로젝트 todo/doing/blocked + OS 피드백
+```
 
-# Server
-make start            # start background server
-make stop             # stop server
-make restart          # restart
-make ps               # status check
-make tail             # live log tail
+### 작업 — 프로젝트 진입
+```bash
+os3 open myproject        # 어디서 실행해도 됨. cd + 호스트 settings 주입 + claude
+#   세션 안: PRD 제출 → 티켓 분해 → os3 approve → os3 dispatch T-XXX
+```
 
-# Multi-machine
-make handoff          # stop + git push
-make pickup           # git pull + start
+### OS 자체 정비
+```bash
+cd ~/dev-os && claude   # 호스트 루트에서 엔진/룰 수정 (sync 불필요)
+```
 
-# Status (no LLM)
-make status           # project status
-make queue            # ticket queue
-make logs             # recent session logs
-make pending          # plans awaiting approval
-
-# Approval
-make approve          # approve latest plan
-make reject R='...'   # reject with reason
-
-# Dispatch
-make dispatch T=T-001 # single ticket
-make resume T=T-001   # resume a blocked ticket
-make dispatch-all     # all todo tickets
-
-# Gates
-make test             # run tests
-make scan-secrets     # secret scan
-make pr-check         # all pre-PR checks
+### 퇴근
+```bash
+os3 archive --project myproject   # done 티켓 정리
+cd ~/dev-os && git push          # 호스트 동기화 (각 프로젝트는 자기 remote로 따로 push)
 ```
 
 ---
 
-## Key rules
+## 3. ★ 새 프로젝트 추가
 
-- **Claude 1 = Planner + Researcher** — plans, researches, creates tickets, reviews. Never codes.
-- **Claude 2 / Codex = Builders** — implement from tickets, write session logs.
-- **Tickets = WHAT + CONTEXT** — Claude 1 writes requirements + research; builders decide HOW.
-- **Status must be `todo`** for new tickets — dispatcher only picks up `todo`.
-- **Approve before dispatch** — no auto-execution without your approval.
+> ⚠ **줄 단위로 복사하세요.** zsh가 `#` 주석을 명령으로 해석할 수 있어 인라인 주석을 뺐습니다.
+> (한 번에 붙이려면 먼저 `setopt interactive_comments`.)
+
+```bash
+cd ~/dev-os/projects
+git init newtool && cd newtool
+printf 'name: newtool\n' > .os3.yaml
+mkdir -p devos/tasks
+cd ~/dev-os
+os3 register newtool projects/newtool
+os3 open newtool
+```
+의미: ① 독립 git 레포 생성(기존 레포면 `git clone <url> ~/dev-os/projects/newtool`) ② `.os3.yaml` 마커(**필수**)
+③ `devos/tasks` task 상태 위치 ④ 호스트 레지스트리 등록 ⑤ 작업 시작.
+> 프로젝트는 제품 코드 + 자기 task 상태만 보유. 엔진·에이전트·doctrine은 호스트가 제공.
 
 ---
 
-## Learn more
+## 4. 명령어 치트시트
 
-- Architecture: `devos/docs/ARCHITECTURE.md`
-- Operation Guide: `devos/docs/OPERATION_GUIDE.md`
-- Builder Guide: `devos/docs/BUILDER_GUIDE.md`
-- AI constitution: `devos/AI.md`
+```bash
+# 호스트 레벨
+os3 overview                  # 전 프로젝트 현황 + 피드백
+os3 projects                  # 등록 프로젝트 목록
+os3 register <name> <path>    # 프로젝트 등록
+os3 open <name>               # 프로젝트 세션 진입
+os3 feedback "<text>"         # OS 중앙 피드백 백로그
+
+# 프로젝트 레벨 (--project <name> 또는 프로젝트 폴더 안)
+os3 status   --project <name>
+os3 queue    --project <name>
+os3 pending  --project <name>
+os3 approve  --project <name>
+os3 reject "이유" --project <name>
+os3 dispatch T-XXX --project <name>
+os3 dispatch-codex T-XXX
+os3 dispatch-all
+os3 archive  --project <name>
+os3 verify   T-XXX
+os3 pr-check
+```
+
+---
+
+## 5. 자주 묻는 것
+
+- **프로젝트 작업은 어디서 시작하나요?** `os3 open <name>` 한 줄. 디렉터리를 직접 찾아 들어갈 필요 없음 — 이름이 곧 인자.
+- **OS를 고치면 프로젝트마다 반영해야 하나요?** 아니요. 엔진이 호스트 1곳에만 있어, 고치면 다음에 어느 프로젝트를 열든 자동 적용. sync 명령 없음.
+- **프로젝트가 호스트 밖에 있으면?** `~/dev-os/projects/` 하위가 아니면 호스트 `.claude`(CLAUDE.md·agents) 자동 발견이 안 됨. 반드시 `projects/` 아래에 둘 것.
+- **`--project` 를 매번 써야 하나요?** 프로젝트 폴더 안에서는 `.os3.yaml` 마커로 자동 인식되어 생략 가능. 호스트 루트 등 밖에서는 `--project <name>` 명시.
+- **CLAUDE2 (Account B)?** sunset. builder sub-agent(in-session, Account A)로 흡수.
+- **make 명령은?** 제거됨. `os3` 로 대체 (`bin/osn` 은 호환 alias).

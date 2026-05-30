@@ -1,26 +1,18 @@
 {
   "statusLine": {
     "type": "command",
-    "command": "bash .claude/hooks/statusline-wrapper.sh"
+    "command": "bash $HOME/dev-os/.claude/hooks/statusline-wrapper.sh"
   },
+  "enableAllProjectMcpServers": true,
+  "disabledMcpjsonServers": [],
   "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash scripts/preflight-claude2.sh --advisory"
-          }
-        ]
-      }
-    ],
     "PreToolUse": [
       {
         "matcher": "Write",
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/guard-no-impl.sh"
+            "command": "bash $HOME/dev-os/.claude/hooks/guard-no-impl.sh"
           }
         ]
       },
@@ -29,7 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/guard-no-impl.sh"
+            "command": "bash $HOME/dev-os/.claude/hooks/guard-no-impl.sh"
           }
         ]
       }
@@ -39,20 +31,10 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/context-monitor.js"
+            "command": "node $HOME/dev-os/.claude/hooks/context-monitor.js"
           }
         ]
       }
     ]
-  },
-  "mcpServers": {
-    "context7": {
-      "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp@latest"]
-    },
-    "filesystem": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."]
-    }
   }
 }

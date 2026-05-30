@@ -1,21 +1,17 @@
-# TASKS (Human View)
+# Tasks (Human-readable view)
+# Source of truth: devos/tasks/QUEUE.yaml
+# This file is generated/updated by Claude 1 for human readability.
 
-> This is a human-readable view. Source of truth: `tasks/QUEUE.yaml`
-> Run `make queue` to see the current queue state.
+## Active Tickets
 
-## Doing
-- (none)
+(No tickets yet)
 
-## Todo
-- (none)
+## Completed
+(None)
 
 ## Blocked
-- (none)
+(None)
 
-## Done (recent)
-- (none)
-
-## Notes
-- SSOT: tasks/QUEUE.yaml
-- Questions: questions/QUEUE.md
-- Pending plans: devos/plans/pending/
+---
+*Last updated: (TBD)*
+*For machine-readable queue: devos/tasks/QUEUE.yaml*
