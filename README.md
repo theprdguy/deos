@@ -14,12 +14,12 @@ Drop a PRD into CLAUDE1. Approve the plan. Watch a Claude sub-agent and Codex sh
 
 A visual, illustrated walkthrough of the architecture — layers, agents, tickets, dispatch, modes, structural safety, SSOT, the host-OS model, and the feedback loop. The README is the summary; this is the *why*.
 
-| | Rendered in your browser | In this repo |
-|---|---|---|
-| 🇬🇧 **English** | [htmlpreview ↗](https://htmlpreview.github.io/?https://github.com/theprdguy/Vibe-Coding-OS/blob/main/docs/deep-dive.en.html) | [`docs/deep-dive.en.html`](docs/deep-dive.en.html) |
-| 🇰🇷 **한국어** | [htmlpreview ↗](https://htmlpreview.github.io/?https://github.com/theprdguy/Vibe-Coding-OS/blob/main/docs/deep-dive.ko.html) | [`docs/deep-dive.ko.html`](docs/deep-dive.ko.html) |
+| | Read it (rendered) | Fallback | Source |
+|---|---|---|---|
+| 🇬🇧 **English** | [**Open ↗**](https://theprdguy.github.io/Vibe-Coding-OS/docs/deep-dive.en.html) | [htmlpreview](https://htmlpreview.github.io/?https://github.com/theprdguy/Vibe-Coding-OS/blob/main/docs/deep-dive.en.html) | [`docs/deep-dive.en.html`](docs/deep-dive.en.html) |
+| 🇰🇷 **한국어** | [**열기 ↗**](https://theprdguy.github.io/Vibe-Coding-OS/docs/deep-dive.ko.html) | [htmlpreview](https://htmlpreview.github.io/?https://github.com/theprdguy/Vibe-Coding-OS/blob/main/docs/deep-dive.ko.html) | [`docs/deep-dive.ko.html`](docs/deep-dive.ko.html) |
 
-<sub>The repo links open raw HTML on GitHub; the htmlpreview links render it. If you enable **GitHub Pages** for this repo, the docs are served directly at `https://theprdguy.github.io/Vibe-Coding-OS/docs/deep-dive.en.html`.</sub>
+<sub>**Open ↗** serves the page via GitHub Pages with full styling. GitHub's repo file view shows raw HTML source (not rendered) — that's expected; use the Open or htmlpreview link to read it.</sub>
 
 ---
 
