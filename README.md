@@ -76,6 +76,47 @@ Vibe Coding OS answers each one structurally: separated roles with **enforced** 
 
 ---
 
+## Requirements & compatibility
+
+This is **Claude-Code-native and opinionated** — it is NOT a model-agnostic harness.
+
+| Category | Tool | Required? | Notes |
+|---|---|---|---|
+| **Required** | [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview) | Yes | Claude Code subscription. CLAUDE1 + all in-session sub-agents run here. |
+| **Optional** | [OpenAI Codex CLI](https://platform.openai.com/docs/codex/overview) | No | Enables the CODEX implementer (backend/infra/tests) and cross-model second opinion (b'). |
+| **Optional** | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | No | Visual-outcome reviewer for rendered UI (`os3 gemini`). |
+| **MCP** | [context7](https://github.com/upstash/context7) | No | Used by CLAUDE1 for up-to-date library API docs. |
+| **Plugin** | [obra/superpowers](https://github.com/obra/superpowers) | No | Agentic skills (brainstorming, writing-plans, systematic-debugging, etc.). Install: [`devos/docs/SKILLS_PLUGIN_INSTALL.md`](devos/docs/SKILLS_PLUGIN_INSTALL.md). |
+| **Runtime** | Python 3.10+ | Yes | For `server/` and `bin/os3`. |
+| **Platform** | macOS or Linux | Yes | Windows via WSL2 is untested. |
+
+---
+
+## Drop-in mode — try it in one repo (5 minutes)
+
+**Fastest way to taste the OS**: scaffold it into an existing repo without restructuring your machine.
+
+```bash
+# From inside your existing project repo:
+bash /path/to/vibe-coding-os/scripts/dropin-init.sh
+```
+
+This copies `.claude/` (agents, hooks, settings) and creates a minimal `devos/` skeleton (QUEUE.yaml, questions, PROJECT_STATE.md, CONTEXT.md) plus a `.os3.yaml` marker — then you run `claude` in that repo and CLAUDE1 picks up the doctrine immediately.
+
+| | Drop-in | Host-OS (full) |
+|---|---|---|
+| **Repos** | 1 | many (engine once, N projects) |
+| **Setup time** | ~5 min (one script) | ~15 min (clone host, register projects) |
+| **What you get** | Doctrine + agents + guard hooks + devos/ skeleton | Everything + `os3 dispatch`, `os3 open`, multi-project kanban, OS-feedback loop |
+| **os3 CLI** | Optional (install separately) | Built-in |
+| **Graduate to host-OS?** | Yes — see [host-OS model](#the-host-os-model--one-engine-many-projects) | — |
+
+> Drop-in still gives you the full agent panel (builder, reviewer, security, designer) and the guard-no-impl hook. The Python `os3 dispatch` routing requires the host CLI on PATH; without it, use `claude` directly and dispatch manually.
+
+See a full example: [`docs/WALKTHROUGH.md`](docs/WALKTHROUGH.md).
+
+---
+
 ## Meet the agents
 
 | Agent | Model | Tools | Role |
