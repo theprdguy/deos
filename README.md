@@ -218,17 +218,21 @@ Contract-first: if API/UI behavior changes, the contract doc is updated **before
 ## Quick start
 
 ```bash
-# 0. Use this template on GitHub, then clone your copy
-git clone https://github.com/<you>/<your-os>.git ~/dev-os && cd ~/dev-os
+# 0. Use this template on GitHub, then clone your copy anywhere
+git clone https://github.com/<you>/<your-os>.git
+cd <your-os>
 
-# 1. Python deps + put the os3 CLI on PATH
-pip install -r requirements.txt
-echo 'export PATH="$HOME/dev-os/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc
+# 1. Run setup: checks prereqs, installs Python deps, guides PATH setup
+./scripts/setup.sh
 
-# 2. Open a session (injects host settings + launches Claude Code)
+# 2. Add bin/ to PATH (setup.sh will show the exact command for your shell)
+#    Example for zsh:
+export PATH="$(pwd)/bin:$PATH"   # for this session; setup.sh shows the permanent form
+
+# 3. Open a session (injects host settings + launches Claude Code)
 os3 open <project>          # or just run `claude` in the repo root to work on the OS itself
 
-# 3. In the session: submit a PRD → CLAUDE1 decomposes → approve → dispatch
+# 4. In the session: submit a PRD → CLAUDE1 decomposes → approve → dispatch
 os3 status                  # current state
 os3 queue                   # active tickets
 os3 approve                 # approve a pending plan
@@ -238,16 +242,16 @@ os3 archive                 # move done tickets to ARCHIVE.yaml
 os3 dashboard               # local read-only kanban at http://127.0.0.1:8787
 ```
 
-You need [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview) (required) and the [Codex CLI](https://platform.openai.com/docs/codex/overview) (optional, for the CODEX implementer + cross-model). Gemini CLI is optional for visual review.
+You need [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview) (required). See the [Requirements & compatibility](#requirements--compatibility) table above for optional tools.
 
 ---
 
 ## The host-OS model — one engine, many projects
 
-The engine, agents, and doctrine live **once** in a host repo (`~/dev-os`). Each product is an **independent git repo** under `~/dev-os/projects/`, carrying only its own product code and task state. The host provides everything else.
+The engine, agents, and doctrine live **once** in a host repo (clone it anywhere — `~/dev-os` is a common choice but not required). Each product is an **independent git repo** under `<host>/projects/`, carrying only its own product code and task state. The host provides everything else.
 
 ```
-~/dev-os/                 host = engine · doctrine · shared .claude (one git repo)
+<host-repo>/              host = engine · doctrine · shared .claude (one git repo)
 ├── server/  bin/os3  .claude/  devos/
 └── projects/            (git-ignored by the host — each is its own repo)
     ├── myproduct-a/      apps/ packages/ + its own devos/tasks · PROJECT_STATE · .os3.yaml
