@@ -101,7 +101,7 @@ This is **Claude-Code-native and opinionated** — it is NOT a model-agnostic ha
 bash /path/to/vibe-coding-os/scripts/dropin-init.sh
 ```
 
-This copies `.claude/` (agents, hooks, settings) and creates a minimal `devos/` skeleton (QUEUE.yaml, questions, PROJECT_STATE.md, CONTEXT.md) plus a `.os3.yaml` marker — then you run `claude` in that repo and CLAUDE1 picks up the doctrine immediately.
+This copies `.claude/` (agents, hooks, settings) into your repo and creates a minimal `devos/` skeleton (QUEUE.yaml, questions, PROJECT_STATE.md, CONTEXT.md) plus a `.os3.yaml` marker. The hook commands in the copied `settings.json` are rewritten to point at your repo's own `.claude/hooks/` directory, so the drop-in repo is **fully self-contained** — the hooks run from the copy inside your repo and the source OS clone does not need to remain in place. Run `claude` in that repo and CLAUDE1 picks up the doctrine immediately.
 
 | | Drop-in | Host-OS (full) |
 |---|---|---|
@@ -111,7 +111,7 @@ This copies `.claude/` (agents, hooks, settings) and creates a minimal `devos/` 
 | **os3 CLI** | Optional (install separately) | Built-in |
 | **Graduate to host-OS?** | Yes — see [host-OS model](#the-host-os-model--one-engine-many-projects) | — |
 
-> Drop-in still gives you the full agent panel (builder, reviewer, security, designer) and the guard-no-impl hook. The Python `os3 dispatch` routing requires the host CLI on PATH; without it, use `claude` directly and dispatch manually.
+> Drop-in still gives you the full agent panel (builder, reviewer, security, designer) and the guard-no-impl + context-monitor hooks. The copied `.claude/` is what runs — hooks fire from your repo's own `.claude/hooks/` directory. The Python `os3 dispatch` routing requires the host CLI on PATH; without it, use `claude` directly and dispatch manually.
 
 See a full example: [`docs/WALKTHROUGH.md`](docs/WALKTHROUGH.md).
 

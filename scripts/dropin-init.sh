@@ -10,8 +10,10 @@
 #   2. Creates a minimal devos/ skeleton (QUEUE.yaml, questions/QUEUE.md,
 #      PROJECT_STATE.md, CONTEXT.md).
 #   3. Writes a .os3.yaml marker so `os3` commands resolve this directory.
-#   4. Rewrites .claude/settings.json hook paths to point at THIS repo
-#      (instead of the host-OS default of $HOME/dev-os).
+#   4. Rewrites .claude/settings.json hook paths to point at THIS repo's own
+#      .claude/hooks/ directory (absolute, target-local), making the drop-in
+#      repo fully self-contained. The source OS clone does not need to remain
+#      in place for the hooks to fire.
 #
 # Idempotent: re-running skips files that already exist.
 #
@@ -61,23 +63,39 @@ else
   ok "Copied .claude/"
 fi
 
-# Rewrite settings.json hook paths:
-# The default settings.json references $HOME/dev-os (the host-OS install
-# location). In drop-in mode we point hooks at the cloned OS_ROOT instead.
+# Rewrite settings.json hook paths to be target-local:
+# The default settings.json ships with $HOME/dev-os paths (the host-OS default).
+# We rewrite every hook command path to TARGET_DIR's own .claude/hooks/ so the
+# drop-in repo is self-contained and does not depend on the source OS clone.
 SETTINGS="$TARGET_DIR/.claude/settings.json"
 if [ -f "$SETTINGS" ]; then
-  # Replace $HOME/dev-os with the actual OS_ROOT path.
-  # Use a temp file to avoid sed -i portability issues across macOS / Linux.
-  python3 - "$SETTINGS" "$OS_ROOT" <<'PY'
-import sys, json, pathlib
+  # Rewrite hook command paths in the copied settings.json so they point at
+  # the TARGET repo's own .claude/hooks/ directory — not at the source OS clone.
+  # This makes the drop-in repo fully self-contained: the hooks run from the
+  # copy inside the target; the source OS clone does not need to remain in place.
+  #
+  # Two replacement passes cover both the generic host-OS default path and the
+  # actual OS_ROOT (handles non-default install locations).  Both passes are
+  # idempotent: if the target path is already present they are no-ops.
+  TARGET_HOOKS="$TARGET_DIR/.claude/hooks"
+  python3 - "$SETTINGS" "$OS_ROOT" "$TARGET_HOOKS" <<'PY'
+import sys, pathlib
+
 settings_path = pathlib.Path(sys.argv[1])
-os_root = sys.argv[2]
+os_root       = sys.argv[2]
+target_hooks  = sys.argv[3]
+
 text = settings_path.read_text()
-# Replace host-OS default path with the actual OS_ROOT
-text = text.replace("$HOME/dev-os", os_root)
+
+# Pass 1: replace the well-known host-OS default placeholder path
+text = text.replace("$HOME/dev-os/.claude/hooks", target_hooks)
+
+# Pass 2: replace the actual OS_ROOT hook path (non-default install locations)
+text = text.replace(os_root + "/.claude/hooks", target_hooks)
+
 settings_path.write_text(text)
 PY
-  ok "Rewrote hook paths in .claude/settings.json → $OS_ROOT"
+  ok "Rewrote hook paths in .claude/settings.json → target-local $TARGET_DIR/.claude/hooks/"
 fi
 
 # ── 2. devos/ skeleton ────────────────────────────────────────────────────────
