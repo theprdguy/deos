@@ -1,4 +1,4 @@
-![Version](https://img.shields.io/badge/version-4.0-blue) ![GitHub Template](https://img.shields.io/badge/GitHub-Template-238636?logo=github) ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white) ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey)
+![Version](https://img.shields.io/badge/version-4.0-blue) ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg) ![GitHub Template](https://img.shields.io/badge/GitHub-Template-238636?logo=github) ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white) ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey)
 
 # Vibe Coding OS
 
@@ -29,6 +29,8 @@ A visual, illustrated walkthrough of the architecture — layers, agents, ticket
 
 - [What this is](#what-this-is)
 - [Why it exists](#why-it-exists)
+- [Requirements & compatibility](#requirements--compatibility)
+- [Drop-in mode — try it in one repo (5 minutes)](#drop-in-mode--try-it-in-one-repo-5-minutes)
 - [Meet the agents](#meet-the-agents)
 - [How it works](#how-it-works)
 - [Operating modes](#operating-modes)
@@ -37,11 +39,13 @@ A visual, illustrated walkthrough of the architecture — layers, agents, ticket
 - [Quick start](#quick-start)
 - [The host-OS model — one engine, many projects](#the-host-os-model--one-engine-many-projects)
 - [Repo layout](#repo-layout)
+- [Use just a piece](#use-just-a-piece)
 - [What's new in v4.0](#whats-new-in-v40)
 - [FAQ](#faq)
 - [Version history](#version-history)
 - [Contributing](#contributing)
 - [Credits & inspiration](#credits--inspiration)
+- [License](#license)
 
 ---
 
@@ -298,6 +302,14 @@ Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). The short vers
 - Contracts in `docs/API_CONTRACT.md` / `UI_CONTRACT.md` update **before** code
 - Use `status: todo` on new tickets (other statuses are silently skipped by the dispatcher)
 - Fork-friendly: keep `devos/`, wire your test runner into `os3 pr-check`, reset `devos/tasks/QUEUE.yaml`
+
+---
+
+## License
+
+This project is licensed under the **MIT License** — see [`LICENSE`](LICENSE) for the full text.
+
+Third-party vendored sources and dependency attributions are documented in [`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md).
 
 ---
 
