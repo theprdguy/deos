@@ -265,17 +265,59 @@ def test_find_ticket_signature_unchanged_for_queue_ticket(tmp_path: Path) -> Non
 # ── CLI: bin/osn lookup --archive ─────────────────────────────────────────
 
 
-def _run_osn(args: list[str], cwd: Path | None = None) -> subprocess.CompletedProcess:
+def _run_osn(
+    args: list[str],
+    cwd: Path | None = None,
+    env: dict | None = None,
+) -> subprocess.CompletedProcess:
     repo_root = Path(__file__).resolve().parent.parent
     env_cwd = cwd or repo_root
     bin_deos = repo_root / "bin" / "deos"
+    run_env = {**__import__("os").environ, "PYTHONPATH": str(repo_root)}
+    if env:
+        run_env.update(env)
     result = subprocess.run(
         [sys.executable, str(bin_deos), *args],
         cwd=str(env_cwd),
+        env=run_env,
         capture_output=True,
         text=True,
     )
     return result
+
+
+def _make_lookup_fixture(tmp_path: Path) -> tuple[Path, Path, str]:
+    """Build a self-contained host+project fixture for CLI lookup tests.
+
+    Returns (host_dir, project_dir, ticket_id).
+    The project QUEUE.yaml contains exactly one ticket with the returned id.
+    """
+    repo_root = Path(__file__).resolve().parent.parent
+    ticket_id = "T-TEST-LOOKUP-01"
+
+    host = tmp_path / "host"
+    (host / "projects").mkdir(parents=True)
+    # Minimal host deos.yaml — copy real file so all keys resolve correctly.
+    (host / "deos.yaml").write_text(
+        (repo_root / "deos.yaml").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+
+    proj = host / "projects" / "test-proj"
+    (proj / "devos" / "tasks").mkdir(parents=True)
+    (proj / ".deos.yaml").write_text("name: test-proj\n", encoding="utf-8")
+    (proj / "devos" / "tasks" / "QUEUE.yaml").write_text(
+        f"version: '3.0'\ntickets:\n"
+        f"  - id: {ticket_id}\n"
+        f"    owner: CODEX\n"
+        f"    status: todo\n"
+        f"    goal: self-contained lookup fixture\n",
+        encoding="utf-8",
+    )
+    (proj / "devos" / "tasks" / "ARCHIVE.yaml").write_text(
+        "version: '3.0'\ntickets: []\n", encoding="utf-8"
+    )
+    return host, proj, ticket_id
 
 
 def test_cli_lookup_archive_flag_not_found_exits_1() -> None:
@@ -285,13 +327,22 @@ def test_cli_lookup_archive_flag_not_found_exits_1() -> None:
     assert "not_found" in result.stderr or "not found" in result.stderr
 
 
-def test_cli_lookup_queue_ticket_returns_yaml() -> None:
-    """bin/osn lookup T-OSN-W6-01 should return YAML with id field (ticket is in QUEUE)."""
-    result = _run_osn(["lookup", "T-OSN-W6-01"])
-    assert result.returncode == 0
+def test_cli_lookup_queue_ticket_returns_yaml(tmp_path: Path) -> None:
+    """bin/deos lookup <id> should return YAML with id field (ticket is in QUEUE).
+
+    Uses a self-contained tmp fixture so the test passes regardless of the
+    host repo's QUEUE contents (public template compatibility).
+    """
+    host, proj, ticket_id = _make_lookup_fixture(tmp_path)
+    result = _run_osn(
+        ["lookup", ticket_id],
+        cwd=proj,
+        env={"OS3_HOST_ROOT": str(host), "PWD": str(proj)},
+    )
+    assert result.returncode == 0, f"stderr: {result.stderr}"
     data = yaml.safe_load(result.stdout)
     assert data is not None
-    assert data.get("id") == "T-OSN-W6-01"
+    assert data.get("id") == ticket_id
 
 
 def test_cli_lookup_archive_parseable_yaml(tmp_path: Path) -> None:
@@ -329,12 +380,21 @@ def test_cli_lookup_archive_first_3_lines_contain_id(tmp_path: Path) -> None:
     assert "id:" in first_3
 
 
-def test_cli_lookup_no_archive_flag_still_works_for_queue_ticket() -> None:
-    """Original lookup without --archive must still work (regression guard)."""
-    result = _run_osn(["lookup", "T-OSN-W6-01"])
-    assert result.returncode == 0
+def test_cli_lookup_no_archive_flag_still_works_for_queue_ticket(tmp_path: Path) -> None:
+    """Lookup without --archive must resolve a QUEUE ticket (regression guard).
+
+    Uses a self-contained tmp fixture so the test passes regardless of the
+    host repo's QUEUE contents (public template compatibility).
+    """
+    host, proj, ticket_id = _make_lookup_fixture(tmp_path)
+    result = _run_osn(
+        ["lookup", ticket_id],
+        cwd=proj,
+        env={"OS3_HOST_ROOT": str(host), "PWD": str(proj)},
+    )
+    assert result.returncode == 0, f"stderr: {result.stderr}"
     data = yaml.safe_load(result.stdout)
-    assert data["id"] == "T-OSN-W6-01"
+    assert data["id"] == ticket_id
 
 
 # ── F1: quoted id fix (OPT-07) ────────────────────────────────────────────
